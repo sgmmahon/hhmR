@@ -1,0 +1,28 @@
+{
+    "id": "624EB783",
+    "path": "~/GitHub/hhmR/R/Test Code.Rmd",
+    "project_path": "R/Test Code.Rmd",
+    "type": "r_markdown",
+    "hash": "3463283356",
+    "contents": "",
+    "dirty": false,
+    "created": 1718290380983.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "tempName": "Untitled1",
+        "chunk_output_type": "inline",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "225,32",
+        "scrollLine": "193"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1718299247,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1718299247596,
+    "read_only": false,
+    "read_only_alternatives": []
+}

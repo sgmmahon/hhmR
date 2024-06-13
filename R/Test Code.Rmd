@@ -1,0 +1,1167 @@
+---
+title: "3.3 Create Heatmaps"
+---
+
+# Import packages
+```{r}
+library(tidyverse)
+library(stringi)
+library(scales)
+library(ggplot2)
+library(patchwork)
+library(grDevices)
+library(RColorBrewer)
+sessionInfo()
+```
+
+# Define rootpaths (please add additional rootpaths that fit your PC, then hashtag out mine, rather than deleting them)
+```{r}
+#ghp = "C:/Users/sgmmahon/Documents/GitHub/timely/"
+ghp = "C:/Users/micha/OneDrive/Documents/GitHub/timely/"
+dp  = "//rfs01/rdm01/Timely/data/"
+lp  = "_lookups/"
+mtp = "_matrices/"
+olp = "_outliers/"
+cnp = "census/"
+csp = "casen/"
+erp = "electoral-roll/"
+msp = "msdf/"
+twp = "twitter/"
+vfp = "vector-files/"
+ptp = "manuscript/plots/"
+scp = "1_scatter_plots/"
+bcp = "2_bar_charts/"
+hmp = "3_heatmaps/"
+crp = "4_correlation_plots/"
+hbp = "5_hybrid_plots/"
+tbp = "6_tables/"
+mcp = "7_misc/"
+aap = "8_additional_analysis/"
+mfp = "1_migration_flow/"
+omp = "2_out_migration/"
+imp = "3_in_migration/"
+nmp = "4_net_migration/"
+pfp = "5_proportion_of_migration_flow/"
+smp = "_supplementary_materials/"
+```
+
+
+
+# Import and format data
+```{r}
+# Import long-format migration matrices
+provincia = read.table(paste0(dp,mtp,"provincia_matrices_long_format.csv"), header = T, sep = ",", na = "") %>% setNames(c("Origin  ~  Destination",names(.)[2:ncol(.)]))
+region    = read.table(paste0(dp,mtp,"region_matrices_long_format.csv")   , header = T, sep = ",", na = "") %>% setNames(c("Origin  ~  Destination",names(.)[2:ncol(.)]))
+
+# Import lookup tables
+lkp    = read.csv(paste0(dp,lp,"chile_provincia_region_lookup_table.csv"))
+
+# Create origin and destination versions of lookup table for joining
+lkp_og = lkp %>% setNames(c("Origin"     ,"ogr"))
+lkp_dn = lkp %>% setNames(c("Destination","dnr"))
+
+# Assign origin and destination regions to provincia data
+provincia = provincia %>% full_join(lkp_og) %>% full_join(lkp_dn) %>% arrange(ogr,Origin,dnr,Destination) %>% .[c(1:3,((ncol(.)-1):(ncol(.))),(4:(ncol(.)-2)))]
+```
+```{r,message=FALSE}
+# Import package
+#library(hhmR)
+
+# CREATE TOY DATA OF INTERNAL MIGRATION BETWEEN COUNTIES (LOWER LEVEL) AND REGIONS (UPPER LEVEL)
+
+# Define names of fake counties
+fake_counties = c("Greenridge","Windermoor","Bramblewood","Silverlake","Thornbury","Maplewood",
+                  "Hawthorne","Pinehurst","Riverton","Meadowbrook","Fairhaven","Oakdale","Stonebridge",
+                  "Brookfield","Ashford","Glenville","Sunnyvale","Westfield")
+
+# Create region county lookup tables
+rc_lkp = data.frame(region = c(rep("North",3),rep("Midlands",5),rep("South West",4),rep("South East",6)), county = fake_counties)
+og_lkp = rc_lkp %>% setNames(c("Origin Region"     ,"Origin County"     ))
+dn_lkp = rc_lkp %>% setNames(c("Destination Region","Destination County"))
+
+# Create dataframe of fake migration data
+set.seed(1234)
+od_df = expand.grid(fake_counties,fake_counties) %>% setNames(paste(c("Origin","Destination"),"County",sep=" ")) %>% full_join(og_lkp) %>% full_join(dn_lkp) %>% 
+        mutate(Migration = (1/rgamma(18*18, shape = 17, rate = 0.5)) %>% {. * 1000} %>% round())
+od_df[od_df$`Origin County` == od_df$`Destination County`,"Migration"] = od_df[od_df$`Origin County` == od_df$`Destination County`,"Migration"] * 10
+
+# RUN FUNCTION
+
+hierarchical_heatmap = hhm(df = od_df, ylower = "Origin County", xlower = "Destination County", yupper = "Origin Region", xupper = "Destination Region", values = "values")
+
+# Check data
+od_df
+```
+
+```{r}
+#' @title log_seq
+#'
+#' @description Creates a vector of logarithmicly increasing values normalised to between 0 and 1.
+#'
+#' @param n Length of sequence.
+#' @param ln How many colour gradients to use in the legend (defaults to 15).
+#'
+#' @return A ggplot object containing the final heatmap.
+#' 
+#' @examples
+#' # CREATE TOY DATA OF INTERNAL MIGRATION BETWEEN COUNTIES (LOWER LEVEL) AND REGIONS (UPPER LEVEL)
+#' 
+#' # Define names of fake counties
+#' fake_counties = c("Greenridge","Windermoor","Bramblewood","Silverlake","Thornbury","Maplewood",
+#'                   "Hawthorne","Pinehurst","Riverton","Meadowbrook","Fairhaven","Oakdale","Stonebridge",
+#'                   "Brookfield","Ashford","Glenville","Sunnyvale","Westfield")
+#' 
+#' # Create region county lookup tables
+#' rc_lkp = data.frame(region = c(rep("North",3),rep("Midlands",5),rep("South West",4),rep("South East",6)), county = fake_counties)
+#' og_lkp = rc_lkp %>% setNames(c("Origin Region"     ,"Origin County"     ))
+#' dn_lkp = rc_lkp %>% setNames(c("Destination Region","Destination County"))
+#' 
+#' # Create dataframe of fake migration data
+#' set.seed(1234)
+#' od_df = expand.grid(fake_counties,fake_counties) %>% setNames(paste(c("Origin","Destination"),"County",sep=" ")) %>% full_join(og_lkp) %>% full_join(dn_lkp) %>% 
+#'         mutate(Migration = (1/rgamma(18*18, shape = 17, rate = 0.5)) %>% {. * 1000} %>% round())
+#' od_df[od_df$`Origin County` == od_df$`Destination County`,"Migration"] = od_df[od_df$`Origin County` == od_df$`Destination County`,"Migration"] * 10
+#' 
+#' # RUN FUNCTION
+#' 
+#' hierarchical_heatmap = hhm(df = od_df, ylower = "Origin County", xlower = "Destination County", yupper = "Origin Region", xupper = "Destination Region", values = "values")
+#' @export
+#' @importFrom dplyr "%>%"
+#' 
+#' 
+log_seq = function(n,ln=15) {
+
+  # Create a sequence from 1 to n
+  seq = seq(1, n, length.out = ln-1)
+  
+  # Apply the logarithm to the sequence
+  log_seq = log(seq)
+  
+  # Scale the sequence to the range [0, 1]
+  min_val = min(log_seq)
+  max_val = max(log_seq)
+  one_seq = ((log_seq - min_val) / (max_val - min_val))
+  
+  # Reverse pattern of scale so breaks are focussed on lower rather than upper end of scale
+  one_seq_rev = one_seq %>% {. - max(.)} %>% {. * -1} %>% rev()
+  
+  # Scale sequence to n
+  scaled_one_seq = one_seq_rev %>% {. * n} %>% round() %>% {. + 1} %>% c(0,.)
+  
+  return(scaled_one_seq)
+}
+```
+
+```{r}
+n = 5
+
+log_seq = function(n,ln=15) {
+
+  # Create a sequence from 1 to n
+  seq = seq(1, n, length.out = ln-1)
+  
+  # Apply the logarithm to the sequence
+  log_seq = log(seq)
+  
+  # Scale the sequence to the range [0, 1]
+  min_val = min(log_seq)
+  max_val = max(log_seq)
+  one_seq = ((log_seq - min_val) / (max_val - min_val))
+  
+  # Reverse pattern of scale so breaks are focussed on lower rather than upper end of scale
+  one_seq_rev = one_seq %>% {. - max(.)} %>% {. * -1} %>% rev()
+  
+  # Scale sequence to n
+  scaled_one_seq = one_seq_rev %>% {. * n} %>% round() %>% {. + 1} %>% c(0,.) %>% {. / (n + 1)}
+  
+  return(scaled_one_seq)
+}
+
+log_seq(500,5)
+```
+
+
+```{r}
+df = od_df
+ylower = "Origin County"
+xlower = "Destination County"
+yupper = "Origin Region"
+xupper = "Destination Region"
+values = "Migration"
+rm_diag = F
+bins = 15
+
+#' @title hhm
+#'
+#' @description Creates a labelled heatmap for heirarchical data.
+#'
+#' @param df A data.frame with containing values with which to populate the heatmap. 
+#' The data.frame must nclude columns specifying the lower categories (ylower, 
+#' xlower) and upper groups (yupper, xupper) that each value corresponds to. These 
+#' categories and groups will be used to arrange and label the rows and columns of 
+#' the heatmap.
+#' @param ylower A column in `df` containing the categories that will be presented 
+#' as rows along the y-axis of the heatmap.
+#' @param xlower A column in `df` containing the categories that will be presented 
+#' as columns along the x-axis of the heatmap.
+#' @param yupper A column in `df` containing the groupings that will be used to 
+#' arrange the heatmap rows.
+#' @param xupper A column in `df` containing the groupings that will be used to 
+#' arrange the heatmap columns.
+#' @param values A column in `df` containing the values used to populate the 
+#' heatmap. 
+#' @param rm_diag Do not show values for categories along the x and y axes that 
+#' are identical (defaults to `FALSE`). This is particularly useful for 
+#' origin-destination where the user may want to hide the diagonal values.
+#' @param bins How many colours to break the legend colour scheme into (defaults 
+#' to 15).
+#' @param cbrks Vector of custom breaks, if users wish to use a discrete legend 
+#' colour scheme (defaults to `NULL`).
+#' @param cclrs Vector of hexcodes, which to create a custom legend colour scheme 
+#' (defaults to `NULL`). If cbrks is supplied, these two vectors must be of the 
+#' same length.
+#' @param norm_brks Normalised to between 0 and 1 in legend (defaults to `FALSE`).
+#' Allows for consistency when comparing heatmaps across different datasets.
+#'
+#' @return A ggplot object containing the final heatmap.
+#' 
+#' @examples
+#' # CREATE TOY DATA OF INTERNAL MIGRATION BETWEEN COUNTIES (LOWER LEVEL) AND REGIONS (UPPER LEVEL)
+#' 
+#' # Define names of fake counties
+#' fake_counties = c("Greenridge","Windermoor","Bramblewood","Silverlake","Thornbury","Maplewood",
+#'                   "Hawthorne","Pinehurst","Riverton","Meadowbrook","Fairhaven","Oakdale","Stonebridge",
+#'                   "Brookfield","Ashford","Glenville","Sunnyvale","Westfield")
+#' 
+#' # Create region county lookup tables
+#' rc_lkp = data.frame(region = c(rep("North",3),rep("Midlands",5),rep("South West",4),rep("South East",6)), county = fake_counties)
+#' og_lkp = rc_lkp %>% setNames(c("Origin Region"     ,"Origin County"     ))
+#' dn_lkp = rc_lkp %>% setNames(c("Destination Region","Destination County"))
+#' 
+#' # Create dataframe of fake migration data
+#' set.seed(1234)
+#' od_df = expand.grid(fake_counties,fake_counties) %>% setNames(paste(c("Origin","Destination"),"County",sep=" ")) %>% full_join(og_lkp) %>% full_join(dn_lkp) %>% 
+#'         mutate(Migration = (1/rgamma(18*18, shape = 17, rate = 0.5)) %>% {. * 1000} %>% round())
+#' od_df[od_df$`Origin County` == od_df$`Destination County`,"Migration"] = od_df[od_df$`Origin County` == od_df$`Destination County`,"Migration"] * 10
+#' 
+#' # RUN FUNCTION
+#' 
+#' hierarchical_heatmap = hhm(df = od_df, ylower = "Origin County", xlower = "Destination County", yupper = "Origin Region", xupper = "Destination Region", values = "values")
+#' @export
+#' @importFrom dplyr "%>%"
+hhm = function(df,ylower,yupper,xlower,xupper,values,rm_diag=F,bins=15,cbrks=NULL) {
+  
+  # Remove unwanted rows and format origin so geographies appear in alphabetical order
+  df = df[,c(ylower,xlower,yupper,xupper,values)]
+  
+  # If user specified to remove diagonal values, set all observations where ylower and xlower are identical to zero
+  if (rm_diag) {
+    df[df[[ylower]] == df[[xlower]],values] = 0
+  }
+
+  # Define names of custom breaks
+  brk_nms = c(0, paste(cbrks %>% .[1:(length(.)-1)] %>% sprintf(fmt = paste0('%#.3f')), 
+                       cbrks %>% .[2: length(.)   ] %>% sprintf(fmt = paste0('%#.3f')), sep = "-"))
+  
+  # Create discrete scale based on these custom breaks
+  df[["scaled"]] = df[[paste0(var,"_scld")]] %>% findInterval(cbrks) %>% ifelse(df[[paste0(var,"_scld")]] == 0, 0, .) %>% 
+                   replace(. == length(cbrks), (length(cbrks)-1)) %>% {. + 1} %>% factor(levels = 1:bns, labels = brk_nms)
+  
+  # Create empty list to populate with ggplot heatmaps
+  pl = list()
+  
+  # Counter to keep track of interations of nested for loop
+  i = 0
+  
+  # For each origin region
+  for (og in 1:length(rgns)) {
+    
+    # For each destination region
+    for (dn in 1:length(rgns)) {
+      
+      # Increase interature counter by 1
+      i = i + 1
+      
+      # Filter provincia-level migration data to only include origin and destination regions of interest
+      sdf = df %>% filter(ogr == rgns[og] & dnr == rgns[dn]) %>%
+                   mutate(Origin = factor(Origin, levels = Origin %>% unique() %>% rev() ))
+      
+      # Define main plot
+      p = ggplot(sdf, aes(Destination, Origin)) +
+        geom_tile(aes(fill = scaled), show.legend = T) +
+        scale_fill_manual(name = "Normalised\nCount", values = cg("white","#08306B",bns), drop = F) +
+        theme(plot.margin = unit(rep(0,4), "cm"),
+              axis.text.x  = element_text(angle = 90, hjust = 1.0, vjust = 0.3),
+              axis.title.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5),
+              axis.title.y = element_text(angle =  0, hjust = 0.5, vjust = 0.5),
+              axis.ticks   = element_blank()) +
+        labs(x = rgns[dn], y = rgns[og])
+      
+      # If bottom-left plot
+      if (og == length(rgns) & dn == 1) {
+        # Include provincia names on both axes
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank())
+      } else if (og < length(rgns) & dn == 1) { # If left-hand plot
+        # Include provincia names on y-axis
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank(),
+                      axis.text.x  = element_blank())
+      } else if (og == length(rgns) & dn > 1) { # If bottom plot
+        # Include provincia names on x-axis
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank(),
+                      axis.text.y  = element_blank())
+      } else { # If plot not on left of bottom edges of multiplot
+        # Remove provincia names
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank(),
+                      axis.text.x  = element_blank(),
+                      axis.text.y  = element_blank())
+      }
+      
+      # Add ggplot to plot list
+      pl[[i]] = p
+      
+    }
+    
+  }
+  
+  # Return list of plots
+  return(pl)
+}
+```
+
+
+
+
+
+# Define functions and key inputs to make provincia heatmaps
+```{r,fig.width=20}
+# Function that creates a logged sequence to use in ggplot legend scale
+log_seq = function(n,ln=15) {
+  
+  # Create a sequence from 1 to n
+  seq = seq(1, n, length.out = ln-1)
+  
+  # Apply the logarithm to the sequence
+  log_seq = log(seq)
+  
+  # Scale the sequence to the range [0, 1]
+  min_val = min(log_seq)
+  max_val = max(log_seq)
+  one_seq = ((log_seq - min_val) / (max_val - min_val))
+  
+  # Reverse pattern of scale so breaks are focussed on lower rather than upper end of scale
+  one_seq_rev = one_seq %>% {. - max(.)} %>% {. * -1} %>% rev()
+  
+  # Scale sequence to n
+  scaled_one_seq = one_seq_rev %>% {. * n} %>% round() %>% {. + 1} %>% c(0,.)
+  
+  return(scaled_one_seq)
+}
+
+# Function that creates colour gradient between two hexcodes
+cg <- function(colour1, colour2, n = 15) {
+  
+  # Create a color palette function
+  colour_func <- grDevices::colorRampPalette(c(colour1, colour2))
+  
+  # Generate the color gradient
+  colour_gradient <- colour_func(n)
+  
+  # Return colour gradient
+  return(colour_gradient)
+}
+
+# Function that creates blank plot with only text of region
+# Used to plot region names in the final heatmap multiplot
+plt_ttl = function(ttl,axs="x") {
+  
+  # If plotting on x-axis
+  if (axs == "x") {
+    
+    # Place at top of plot and rotate 90 degrees
+    p = ggplot(data.frame(x = 0:1, y = 0:1), aes(x = x, y = y)) + 
+      geom_point(col = "white") + 
+      geom_text(x = 0.495, y = 1, angle = 90, label = ttl, size = 4, hjust = 1) + 
+      coord_cartesian(xlim = c(0,1), ylim = c(0,1)) +
+      theme_void() +
+      theme(plot.margin = unit(rep(0,4), "cm"))
+    
+  } else if (axs == "y") { # If plotting on y-axis
+    
+    # Place at left of plot
+    p = ggplot(data.frame(x = 0:1, y = 0:1), aes(x = x, y = y)) + 
+      geom_point(col = "white") + 
+      geom_text(x = 1, y = 0.51, angle =  0, label = ttl, size = 4, hjust = 1) + 
+      coord_cartesian(xlim = c(0,1), ylim = c(0,1)) +
+      theme_void() +
+      theme(plot.margin = unit(rep(0,4), "cm"))
+
+  }
+  
+  # Return region name plot
+  return(p)
+}
+
+# Function that plots provincia-level heatmap grouped by region
+pr_htmp = function(df,var,bns=15) {
+  
+  # Remove unwanted rows and format origin so geographies appear in alphabetical order
+  df = df[,c("Origin","Destination","ogr","dnr",var)]
+  df[,paste0(var,"_scld")] = df[[var]] / max(df[[var]])
+  
+  # Create lookup table of all origin and destination provincias
+  od_lkp = expand.grid(Origin = lkp[["provincia"]], Destination = lkp[["provincia"]]) %>% full_join(lkp_og) %>% full_join(lkp_dn)
+  
+  # Add values for diagonals, so they can be assigned 0 (causes them to show up as white squares in the final plot)
+  df = df %>% full_join(od_lkp) %>% arrange(Origin,Destination,ogr,dnr)
+  
+  # Assign diagonal as zero
+  df[df$Origin == df$Destination,paste0(var,"_scld")] = 0
+  
+  # Create custom breaks for log scale
+  cbrks = log_seq(999,bns) / 1000
+
+  # Define names of custom breaks
+  brk_nms = c(0, paste(cbrks %>% .[1:(length(.)-1)] %>% sprintf(fmt = paste0('%#.3f')), 
+                       cbrks %>% .[2: length(.)   ] %>% sprintf(fmt = paste0('%#.3f')), sep = "-"))
+  
+  # Create discrete scale based on these custom breaks
+  df[["scaled"]] = df[[paste0(var,"_scld")]] %>% findInterval(cbrks) %>% ifelse(df[[paste0(var,"_scld")]] == 0, 0, .) %>% 
+                   replace(. == length(cbrks), (length(cbrks)-1)) %>% {. + 1} %>% factor(levels = 1:bns, labels = brk_nms)
+  
+  # Create empty list to populate with ggplot heatmaps
+  pl = list()
+  
+  # Counter to keep track of interations of nested for loop
+  i = 0
+  
+  # For each origin region
+  for (og in 1:length(rgns)) {
+    
+    # For each destination region
+    for (dn in 1:length(rgns)) {
+      
+      # Increase interature counter by 1
+      i = i + 1
+      
+      # Filter provincia-level migration data to only include origin and destination regions of interest
+      sdf = df %>% filter(ogr == rgns[og] & dnr == rgns[dn]) %>%
+                   mutate(Origin = factor(Origin, levels = Origin %>% unique() %>% rev() ))
+      
+      # Define main plot
+      p = ggplot(sdf, aes(Destination, Origin)) +
+        geom_tile(aes(fill = scaled), show.legend = T) +
+        scale_fill_manual(name = "Normalised\nCount", values = cg("white","#08306B",bns), drop = F) +
+        theme(plot.margin = unit(rep(0,4), "cm"),
+              axis.text.x  = element_text(angle = 90, hjust = 1.0, vjust = 0.3),
+              axis.title.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5),
+              axis.title.y = element_text(angle =  0, hjust = 0.5, vjust = 0.5),
+              axis.ticks   = element_blank()) +
+        labs(x = rgns[dn], y = rgns[og])
+      
+      # If bottom-left plot
+      if (og == length(rgns) & dn == 1) {
+        # Include provincia names on both axes
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank())
+      } else if (og < length(rgns) & dn == 1) { # If left-hand plot
+        # Include provincia names on y-axis
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank(),
+                      axis.text.x  = element_blank())
+      } else if (og == length(rgns) & dn > 1) { # If bottom plot
+        # Include provincia names on x-axis
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank(),
+                      axis.text.y  = element_blank())
+      } else { # If plot not on left of bottom edges of multiplot
+        # Remove provincia names
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank(),
+                      axis.text.x  = element_blank(),
+                      axis.text.y  = element_blank())
+      }
+      
+      # Add ggplot to plot list
+      pl[[i]] = p
+      
+    }
+    
+  }
+  
+  # Return list of plots
+  return(pl)
+}
+
+# Define region names
+rgns = c(provincia$ogr,provincia$dnr) %>% unique() %>% sort()
+
+# Define widths of multiplots
+pws = lkp %>% group_by(region) %>% summarise(n = n()) %>% .$n
+
+# Create empty lists to populate with region names
+ot = list()
+dt = list()
+
+# For loop that creates ggplots containing only region names
+for (i in 1:length(rgns)) {
+  ot[[i]] = plt_ttl(rgns[i], axs = "y") 
+  dt[[i]] = plt_ttl(rgns[i], axs = "x") 
+}
+```
+
+
+
+
+
+
+# Plot msdf all provincia heatmap
+```{r,fig.width=20}
+# Get msdf provincia heatmap plots
+pl = pr_htmp(provincia,"msdf_all_2018_2022")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hmp,"provincia_msdf_all_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+```
+# Plot msdf male provincia heatmap
+```{r}
+# Get msdf provincia heatmap plots
+pl = pr_htmp(provincia,"msdf_male_2018_2022")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hmp,"provincia_msdf_male_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+```
+# Plot msdf female provincia heatmap
+```{r}
+# Get msdf provincia heatmap plots
+pl = pr_htmp(provincia,"msdf_female_2018_2022")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hmp,"provincia_msdf_female_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+```
+# Plot census all provincia heatmap
+```{r}
+# Get msdf provincia heatmap plots
+pl = pr_htmp(provincia,"census_all_2012_2017")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hmp,"provincia_census_all_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+```
+
+
+
+# Plot casen all provincia heatmap
+```{r}
+# Get msdf provincia heatmap plots
+pl = pr_htmp(provincia,"casen_all_2017_2022")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hmp,"provincia_casen_all_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+```
+# Plot casen male provincia heatmap
+```{r}
+# Get msdf provincia heatmap plots
+pl = pr_htmp(provincia,"casen_male_2017_2022")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hmp,"provincia_casen_male_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+```
+# Plot casen female provincia heatmap
+```{r}
+# Get msdf provincia heatmap plots
+pl = pr_htmp(provincia,"casen_female_2017_2022")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hmp,"provincia_casen_female_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+```
+
+
+
+# Plot electoral roll all provincia heatmap
+```{r}
+# Get msdf provincia heatmap plots
+pl = pr_htmp(provincia,"electoral_roll_all_2017_2020")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hmp,"provincia_electoral_roll_all_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+```
+# Plot electoral roll male provincia heatmap
+```{r}
+# Get msdf provincia heatmap plots
+pl = pr_htmp(provincia,"electoral_roll_male_2017_2020")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hmp,"provincia_electoral_male_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+```
+# Plot electoral roll female provincia heatmap
+```{r}
+# Get msdf provincia heatmap plots
+pl = pr_htmp(provincia,"electoral_roll_female_2017_2020")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hmp,"provincia_electoral_female_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Plot all MSDF heatmaps for hybrid plot
+```{r,fig.width=20}
+# Get msdf 2018-2022 heatmap plots
+pl = pr_htmp(provincia,"msdf_all_2018_2022")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/msdf_2018_2022_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+
+
+
+# Get msdf 2018-2022 heatmap plots
+pl = pr_htmp(provincia,"casen_all_2017_2022")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/casen_2017_2022_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+
+
+
+# Get msdf 2018-2020 heatmap plots
+pl = pr_htmp(provincia,"msde_all_2018_2020")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/msdf_2018_2020_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+
+
+
+# Get msdf 2018-2020 heatmap plots
+pl = pr_htmp(provincia,"electoral_roll_all_2017_2020")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/electoral_roll_2017_2020_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+
+
+
+# Get msdf 2018-2019 heatmap plots
+pl = pr_htmp(provincia,"msdf_all_2018_2019")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/msdf_2018_2019_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+
+
+
+# Get msdf 2018-2019 heatmap plots
+pl = pr_htmp(provincia,"census_all_2012_2017")
+
+# Save multiplot to file
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/census_2012_2017_heatmap.png"), units="px", width=4500, height=4000, res=300)
+ot[[ 1]]        + pl[[  1]] + pl[[  2]] + pl[[  3]] + pl[[  4]] + pl[[  5]] + pl[[  6]] + pl[[  7]] + pl[[  8]] + pl[[  9]] + pl[[ 10]] + pl[[ 11]] + pl[[ 12]] + pl[[ 13]] + pl[[ 14]] + pl[[ 15]] + pl[[ 16]] + 
+  ot[[ 2]]      + pl[[ 17]] + pl[[ 18]] + pl[[ 19]] + pl[[ 20]] + pl[[ 21]] + pl[[ 22]] + pl[[ 23]] + pl[[ 24]] + pl[[ 25]] + pl[[ 26]] + pl[[ 27]] + pl[[ 28]] + pl[[ 29]] + pl[[ 30]] + pl[[ 31]] + pl[[ 32]] + 
+  ot[[ 3]]      + pl[[ 33]] + pl[[ 34]] + pl[[ 35]] + pl[[ 36]] + pl[[ 37]] + pl[[ 38]] + pl[[ 39]] + pl[[ 40]] + pl[[ 41]] + pl[[ 42]] + pl[[ 43]] + pl[[ 44]] + pl[[ 45]] + pl[[ 46]] + pl[[ 47]] + pl[[ 48]] + 
+  ot[[ 4]]      + pl[[ 49]] + pl[[ 50]] + pl[[ 51]] + pl[[ 52]] + pl[[ 53]] + pl[[ 54]] + pl[[ 55]] + pl[[ 56]] + pl[[ 57]] + pl[[ 58]] + pl[[ 59]] + pl[[ 60]] + pl[[ 61]] + pl[[ 62]] + pl[[ 63]] + pl[[ 64]] + 
+  ot[[ 5]]      + pl[[ 65]] + pl[[ 66]] + pl[[ 67]] + pl[[ 68]] + pl[[ 69]] + pl[[ 70]] + pl[[ 71]] + pl[[ 72]] + pl[[ 73]] + pl[[ 74]] + pl[[ 75]] + pl[[ 76]] + pl[[ 77]] + pl[[ 78]] + pl[[ 79]] + pl[[ 80]] + 
+  ot[[ 6]]      + pl[[ 81]] + pl[[ 82]] + pl[[ 83]] + pl[[ 84]] + pl[[ 85]] + pl[[ 86]] + pl[[ 87]] + pl[[ 88]] + pl[[ 89]] + pl[[ 90]] + pl[[ 91]] + pl[[ 92]] + pl[[ 93]] + pl[[ 94]] + pl[[ 95]] + pl[[ 96]] + 
+  ot[[ 7]]      + pl[[ 97]] + pl[[ 98]] + pl[[ 99]] + pl[[100]] + pl[[101]] + pl[[102]] + pl[[103]] + pl[[104]] + pl[[105]] + pl[[106]] + pl[[107]] + pl[[108]] + pl[[109]] + pl[[110]] + pl[[111]] + pl[[112]] + 
+  ot[[ 8]]      + pl[[113]] + pl[[114]] + pl[[115]] + pl[[116]] + pl[[117]] + pl[[118]] + pl[[119]] + pl[[120]] + pl[[121]] + pl[[122]] + pl[[123]] + pl[[124]] + pl[[125]] + pl[[126]] + pl[[127]] + pl[[128]] + 
+  ot[[ 9]]      + pl[[129]] + pl[[130]] + pl[[131]] + pl[[132]] + pl[[133]] + pl[[134]] + pl[[135]] + pl[[136]] + pl[[137]] + pl[[138]] + pl[[139]] + pl[[140]] + pl[[141]] + pl[[142]] + pl[[143]] + pl[[144]] + 
+  ot[[10]]      + pl[[145]] + pl[[146]] + pl[[147]] + pl[[148]] + pl[[149]] + pl[[150]] + pl[[151]] + pl[[152]] + pl[[153]] + pl[[154]] + pl[[155]] + pl[[156]] + pl[[157]] + pl[[158]] + pl[[159]] + pl[[160]] + 
+  ot[[11]]      + pl[[161]] + pl[[162]] + pl[[163]] + pl[[164]] + pl[[165]] + pl[[166]] + pl[[167]] + pl[[168]] + pl[[169]] + pl[[170]] + pl[[171]] + pl[[172]] + pl[[173]] + pl[[174]] + pl[[175]] + pl[[176]] + 
+  ot[[12]]      + pl[[177]] + pl[[178]] + pl[[179]] + pl[[180]] + pl[[181]] + pl[[182]] + pl[[183]] + pl[[184]] + pl[[185]] + pl[[186]] + pl[[187]] + pl[[188]] + pl[[189]] + pl[[190]] + pl[[191]] + pl[[192]] + 
+  ot[[13]]      + pl[[193]] + pl[[194]] + pl[[195]] + pl[[196]] + pl[[197]] + pl[[198]] + pl[[199]] + pl[[200]] + pl[[201]] + pl[[202]] + pl[[203]] + pl[[204]] + pl[[205]] + pl[[206]] + pl[[207]] + pl[[208]] + 
+  ot[[14]]      + pl[[209]] + pl[[210]] + pl[[211]] + pl[[212]] + pl[[213]] + pl[[214]] + pl[[215]] + pl[[216]] + pl[[217]] + pl[[218]] + pl[[219]] + pl[[220]] + pl[[221]] + pl[[222]] + pl[[223]] + pl[[224]] + 
+  ot[[15]]      + pl[[225]] + pl[[226]] + pl[[227]] + pl[[228]] + pl[[229]] + pl[[230]] + pl[[231]] + pl[[232]] + pl[[233]] + pl[[234]] + pl[[235]] + pl[[236]] + pl[[237]] + pl[[238]] + pl[[239]] + pl[[240]] + 
+  ot[[16]]      + pl[[241]] + pl[[242]] + pl[[243]] + pl[[244]] + pl[[245]] + pl[[246]] + pl[[247]] + pl[[248]] + pl[[249]] + pl[[250]] + pl[[251]] + pl[[252]] + pl[[253]] + pl[[254]] + pl[[255]] + pl[[256]] + 
+  plot_spacer() + dt[[  1]] + dt[[  2]] + dt[[  3]] + dt[[  4]] + dt[[  5]] + dt[[  6]] + dt[[  7]] + dt[[  8]] + dt[[  9]] + dt[[ 10]] + dt[[ 11]] + dt[[ 12]] + dt[[ 13]] + dt[[ 14]] + dt[[ 15]] + dt[[ 16]] + 
+  plot_layout(widths = c(8.5,pws), heights = c(pws,8.5), guides = "collect")
+dev.off()
+```
+# Plot titles for hybrid plot
+```{r}
+# Function to create title plot
+ttl_plt = function(ttl,sz=20) {
+  ggplot() +
+    ggtitle(ttl) + 
+    theme_minimal() + 
+    theme(plot.title = element_text(size=sz))
+}
+
+# Save plots
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/msdf_casen_scatter_title.png"), units="px", width=4000, height=300, res=300)
+ttl_plt("MSDF vs CASEN")
+dev.off()
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/msdf_electoral_roll_scatter_title.png"), units="px", width=4000, height=300, res=300)
+ttl_plt("MSDF vs Electoral Roll")
+dev.off()
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/msdf_census_scatter_title.png"), units="px", width=4000, height=300, res=300)
+ttl_plt("MSDF vs Census")
+dev.off()
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/msdf_2018_2022_heatmap_title.png"), units="px", width=4500, height=300, res=300)
+ttl_plt("MSDF   (2018 - 2022)")
+dev.off()
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/msdf_2018_2020_heatmap_title.png"), units="px", width=4500, height=300, res=300)
+ttl_plt("MSDF   (2018 - 2020)")
+dev.off()
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/msdf_2018_2019_heatmap_title.png"), units="px", width=4500, height=300, res=300)
+ttl_plt("MSDF   (2018 - 2019)")
+dev.off()
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/casen_2017_2022_heatmap_title.png"), units="px", width=4500, height=300, res=300)
+ttl_plt("CASEN   (2017 - 2022)")
+dev.off()
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/electoral_roll_2017_2020_heatmap_title.png"), units="px", width=4500, height=300, res=300)
+ttl_plt("Electoral Roll   (2017 - 2020)")
+dev.off()
+png(file = paste0(ghp,ptp,hbp,"scatter_heatmap/component_plots/census_2012_2017_heatmap_title.png"), units="px", width=4500, height=300, res=300)
+ttl_plt("Census   (2012 - 2017)")
+dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+# Plot region heatmaps
+```{r,fig.width=20}
+# Function to create heatmap for specific variable
+get_hm = function(df,var,max_col,lgttl ="Count",ttl=NULL,axs=NULL,bns=15) {
+  
+  # Remove unwanted rows and format origin so geographies appear in alphabetical order
+  df = df[,c("Origin","Destination",var)]
+  df[,paste0(var,"_scld")] = df[[var]] / max(df[[var]])
+  
+  # Create lookup table of all origin and destination provincias
+  od_lkp = expand.grid(Origin = lkp[["region"]], Destination = lkp[["region"]])
+  
+  # Add values for diagonals, so they can be assigned 0 (causes them to show up as white squares in the final plot)
+  df = df %>% full_join(od_lkp) %>% arrange(Origin,Destination)
+  
+  # Assign diagonal as zero
+  df[df$Origin == df$Destination,paste0(var,"_scld")] = 0
+    
+  # Remove unwanted rows and format origin so geographies appear in alphabetical order
+  df = df %>% mutate(Origin = factor(Origin, df$Origin %>% unique() %>% sort() %>% rev() ) )
+  
+  # Assing limit of legend scale
+  lglmts = c(0,max(df[[var]],na.rm=T))
+    
+  # Create custom breaks for log scale
+  cbrks = log_seq(999,bns) / 1000
+  
+  # Define names of custom breaks
+  brk_nms = c(0, paste(cbrks %>% .[1:(length(.)-1)] %>% sprintf(fmt = paste0('%#.3f')), 
+                       cbrks %>% .[2: length(.)   ] %>% sprintf(fmt = paste0('%#.3f')), sep = "-"))
+  
+  # Create discrete scale based on these custom breaks
+  df[["scaled"]] = df[[paste0(var,"_scld")]] %>% findInterval(cbrks) %>% ifelse(df[[paste0(var,"_scld")]] == 0, 0, .) %>% 
+                   replace(. == length(cbrks), (length(cbrks)-1)) %>% {. + 1} %>% factor(levels = 1:bns, labels = brk_nms)
+      
+  # Define main plot
+  p = ggplot(df, aes(Destination, Origin)) +
+    geom_tile(aes(fill = scaled), show.legend = T) +
+    scale_fill_manual(name = paste0("\n\nNormalised\n",lgttl,"\nCount"), values = cg("white",max_col,bns), drop = F) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1.0, vjust = 0.5),
+          axis.ticks = element_blank())
+  
+  # Optional title
+  if (!is.null(ttl)) {
+    p = p + ggtitle(ttl)
+  }
+  
+  # Optional axes titles
+  if (is.null(axs)) {
+    p = p + theme(axis.title.x = element_blank(),
+                  axis.title.y = element_blank(),
+                  axis.text.x  = element_blank(),
+                  axis.text.y  = element_blank())
+  } else if (axs == "x") {
+    p = p + theme(axis.title.x = element_blank(),
+                  axis.title.y = element_blank(),
+                  axis.text.y  = element_blank())
+  } else if (axs == "y") {
+    p = p + theme(axis.title.x = element_blank(),
+                  axis.title.y = element_blank(),
+                  axis.text.x  = element_blank())
+  } else if (axs == "xy") {
+    p = p + theme(axis.title.x = element_blank(),
+                  axis.title.y = element_blank())
+  }
+  
+  # Return plot
+  return(p)
+}
+
+# Define region msdf heatmap
+rg_msd_all = get_hm(region,"msdf_all_2018_2022"             , "#2c569c", lgttl = "MSDF", ttl = "All\n\n\n\nMSDF  (2018 - 2022)", axs =  "y")
+rg_msd_mle = get_hm(region,"msdf_male_2018_2022"            , "#2c569c", lgttl = "MSDF", ttl = "Men\n\n\n\n")
+rg_msd_fml = get_hm(region,"msdf_female_2018_2022"          , "#2c569c", lgttl = "MSDF", ttl = "Women\n\n\n\n")
+# Define region casen heatmap
+rg_csn_all = get_hm(region,"casen_all_2017_2022"            , "#a5234e", lgttl = "CASEN", ttl = "\nCASEN  (2017 - 2022)", axs = "y")
+rg_csn_mle = get_hm(region,"casen_male_2017_2022"           , "#a5234e", lgttl = "CASEN")
+rg_csn_fml = get_hm(region,"casen_female_2017_2022"         , "#a5234e", lgttl = "CASEN")
+# Define region electoral roll heatmaps
+rg_elr_all = get_hm(region,"electoral_roll_all_2017_2020"   , "#01665E", lgttl = "Electoral Roll", axs =  "y", ttl = "\nElectoral Roll  (2017 - 2020)")
+rg_elr_mle = get_hm(region,"electoral_roll_male_2017_2020"  , "#01665E", lgttl = "Electoral Roll", axs = "x")
+rg_elr_fml = get_hm(region,"electoral_roll_female_2017_2020", "#01665E", lgttl = "Electoral Roll", axs = "x")
+# Define region census heatmaps
+rg_cns_all = get_hm(region,"census_all_2012_2017"           , "#e3b80a", lgttl = "Census" , axs =  "y", ttl = "\nCensus  (2012 - 2017)")
+# Define region twitter heatmaps
+rg_t92_all = get_hm(region,"twitter_all_2019_2022"          , "#2f2d2a", lgttl = "Twitter", axs = "xy", ttl = "\nTwitter  (2019 - 2022)")
+
+# Define parameters to control layout of plot
+s = 20
+p = 300
+h = p + s
+sp = 35.6
+ts = 100
+
+# Define plot layout
+layout <- c(
+  area(t =   1, l =   1, b =     p   , r =     p),
+  area(t =   1, l =   h, b =     p   , r =   h+p),
+  area(t =   1, l = 2*h, b =     p   , r = 2*h+p),
+  area(t =   h, l =   1, b =   h+p   , r =     p),
+  area(t =   h, l =   h, b =   h+p   , r =   h+p),
+  area(t =   h, l = 2*h, b =   h+p   , r = 2*h+p),
+  area(t = 2*h, l =   1, b = 2*h+p   , r =     p),
+  area(t = 2*h, l =   h, b = 2*h+p+sp, r =   h+p),
+  area(t = 2*h, l = 2*h, b = 2*h+p+sp, r = 2*h+p),
+  area(t = 3*h, l =   1, b = 3*h+p   , r =     p),
+  area(t = 4*h, l =   1, b = 4*h+p+ts, r =     p)
+)
+
+# Clean garbage
+gc()
+
+# Define plot
+png(file = paste0(ghp,ptp,hmp,"region_heatmaps.png"), units="px", width=5800, height=9500, res=300)
+rg_msd_all         + rg_msd_mle       + rg_msd_fml       + 
+  rg_csn_all       + rg_csn_mle       + rg_csn_fml       + 
+  rg_elr_all       + free(rg_elr_mle) + free(rg_elr_fml) + 
+  rg_cns_all       + 
+  free(rg_t92_all) +
+  plot_layout(design = layout, guides = "collect")
+dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+# Colour schemes
+```{r}
+brewer.pal(n = 9, name = 'Greys')
+```
+
+```{r, fig.height=4}
+display.brewer.pal(n = 9, name = 'Greys')
+```
+
+```{r, fig.height=9}
+display.brewer.all(colorblindFriendly = T)
+```
