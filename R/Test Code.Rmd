@@ -87,7 +87,7 @@ od_df[od_df$`Origin County` == od_df$`Destination County`,"Migration"] = od_df[o
 
 # RUN FUNCTION
 
-hierarchical_heatmap = hhm(df = od_df, ylower = "Origin County", xlower = "Destination County", yupper = "Origin Region", xupper = "Destination Region", values = "values")
+hierarchical_heatmap = hhm(df = od_df, ylower = "Origin County", xlower = "Destination County", yupper = "Origin Region", xupper = "Destination Region", values = "Migration")
 
 # Check data
 od_df
@@ -182,21 +182,17 @@ log_seq(500,5)
 
 
 ```{r}
-df = od_df
-ylower = "Origin County"
-xlower = "Destination County"
-yupper = "Origin Region"
-xupper = "Destination Region"
-values = "Migration"
-rm_diag = F
-bins = 15
-
 #' @title hhm
 #'
-#' @description Creates a labelled heatmap for heirarchical data.
-#'
+#' @description Creates a labelled heatmap from heirarchical data. This function is
+#' useful if you wish to create a heatmap where the categories shown on both the x
+#' and y axis can be grouped in some way. This heatmap will order the categories by
+#' their assigned group and present both the categories and group labels along the 
+#' axes. An example might be series of smaller geographies (lower categories) which 
+#' aggregate into larger geographical regions (upper groups).
+#' 
 #' @param df A data.frame with containing values with which to populate the heatmap. 
-#' The data.frame must nclude columns specifying the lower categories (ylower, 
+#' The data.frame must include columns specifying the lower categories (ylower, 
 #' xlower) and upper groups (yupper, xupper) that each value corresponds to. These 
 #' categories and groups will be used to arrange and label the rows and columns of 
 #' the heatmap.
@@ -209,19 +205,25 @@ bins = 15
 #' @param xupper A column in `df` containing the groupings that will be used to 
 #' arrange the heatmap columns.
 #' @param values A column in `df` containing the values used to populate the 
-#' heatmap. 
+#' heatmap.
 #' @param rm_diag Do not show values for categories along the x and y axes that 
 #' are identical (defaults to `FALSE`). This is particularly useful for 
-#' origin-destination where the user may want to hide the diagonal values.
-#' @param bins How many colours to break the legend colour scheme into (defaults 
-#' to 15).
+#' origin-destination heatmaps, where the user may want to hide the diagonal 
+#' values.
+#' @param lgttl Option to manually define legend title.
 #' @param cbrks Vector of custom breaks, if users wish to use a discrete legend 
 #' colour scheme (defaults to `NULL`).
 #' @param cclrs Vector of hexcodes, which to create a custom legend colour scheme 
 #' (defaults to `NULL`). If cbrks is supplied, these two vectors must be of the 
 #' same length.
 #' @param norm_brks Normalised to between 0 and 1 in legend (defaults to `FALSE`).
-#' Allows for consistency when comparing heatmaps across different datasets.
+#' Allows for consistency when comparing heatmaps across different datasets. At 
+#' present, this only works all heatmap values are positive.
+#' @param lgdps If using custom breaks, define the number of decimal points to 
+#' round the legend scale to (defaults to 3).
+#' @param bins If breaking legend into discrete ranges and not using custom 
+#' breaks, how many colours to break the legend colour scheme into (defaults to 
+#' 15).
 #'
 #' @return A ggplot object containing the final heatmap.
 #' 
@@ -249,6 +251,140 @@ bins = 15
 #' hierarchical_heatmap = hhm(df = od_df, ylower = "Origin County", xlower = "Destination County", yupper = "Origin Region", xupper = "Destination Region", values = "values")
 #' @export
 #' @importFrom dplyr "%>%"
+
+df = od_df
+ylower = "Origin County"
+xlower = "Destination County"
+yupper = "Origin Region"
+xupper = "Destination Region"
+values = "Migration"
+rm_diag = F
+bins = 15
+cbrks=NULL
+cclrs=NULL
+norm_brks=F
+lgdps=3
+
+hhm = function(df,ylower,yupper,xlower,xupper,values,rm_diag=F,bins=15,lgttl=NULL,cbrks=NULL,cclrs=NULL,norm_brks=F,lgdps=3) {
+  
+  # Remove unwanted rows and format origin so geographies appear in alphabetical order
+  df = df[,c(ylower,xlower,yupper,xupper,values)]
+  
+  # Define the groups to be shown along the x and y axes
+  xgrps = df[[xupper]] %>% unique()
+  ygrps = df[[yupper]] %>% unique()
+  
+  # If user specified to remove diagonal values, set all observations where ylower and xlower are identical to zero
+  if (rm_diag) {
+    df[df[[ylower]] == df[[xlower]],values] = NA
+  }
+  
+  # Option to normalise values between 0-1 (only works if all values are positive)
+  if (norm_brks) {
+    
+    # If any values are negative, return error message
+    if ((df[[values]] < 0) %>% sum() %>% {. > 0}) {stop("norm_brks can only be used if all values used to populate the heatmap are positive.")}
+    
+    # Otherwise normalise values
+    df[[values]] = df[[values]] / max(df[[values]])
+  }
+  
+  # Option to split legend into custom categories
+  if (!is.null(cbrks)) {
+    
+    # Define names of custom breaks
+    brk_nms = c(0, paste(cbrks %>% .[1:(length(.)-1)] %>% sprintf(fmt = paste0('%#.',lgdps,'f')), 
+                         cbrks %>% .[2: length(.)   ] %>% sprintf(fmt = paste0('%#.',lgdps,'f')), sep = "-"))
+  
+    # Create discrete scale based on these custom breaks
+    df[[values]] = df[[values]] %>% findInterval(cbrks) %>% ifelse(df[[paste0(var,"_scld")]] == 0, 0, .) %>% 
+                                    replace(. == length(cbrks), (length(cbrks)-1)) %>% {. + 1} %>% factor(levels = 1:bns, labels = brk_nms)
+  }
+  
+  # Define legend title (if not defined by user)
+  if (is.null(lgttl) && norm_brks) {
+    lgttl = "Normalised\nValues"
+  } else if (is.null(lgttl) && norm_brks == F) {
+    lgttl = "Values"
+  }
+  
+  # Define 
+  
+  # Create empty list to populate with ggplot heatmaps
+  pl = list()
+  
+  # Counter to keep track of interations of nested for loop
+  i = 0
+  
+  # For each y-axis group
+  for (ygrp in 1:length(ygrps)) {
+    
+    # For each x-axis group
+    for (xgrp in 1:length(xgrps)) {
+      
+      ygrp = 1
+      xgrp = 1
+      
+      # Increase interature counter by 1
+      i = i + 1
+      
+      # Filter group-level migration data to only include origin and destination regions of interest
+      sdf = df[df[[yupper]] == ygrps[ygrp] & df[[xupper]] == xgrps[xgrp],]
+      
+      # Reverse order of categories on y-axis to ensure goes alphabetically from top to bottom
+      sdf[[ylower]] = factor(sdf[[ylower]], levels = sdf[[ylower]] %>% unique() %>% rev() )
+      
+      # Define main plot
+      p = ggplot(sdf, aes_string(xlower, ylower)) +
+        geom_tile(aes_string(fill = values), show.legend = T) +
+        theme(plot.margin = unit(rep(0,4), "cm"),
+              axis.text.x  = element_text(angle = 90, hjust = 1.0, vjust = 0.3),
+              axis.title.x = element_text(angle = 90, hjust = 0.5, vjust = 0.5),
+              axis.title.y = element_text(angle =  0, hjust = 0.5, vjust = 0.5),
+              axis.ticks   = element_blank()) +
+        labs(x = xgrps[xgrp], y = ygrps[ygrp])
+      
+      if (!is.null(cbrks) && !is.null(cclrs)) {
+        p = p + scale_fill_manual(name = lgttl, values = cg("white","#08306B",bns), drop = F)
+      } else if (!is.null(cbrks) && is.null(cclrs)) {
+        p = p + scale_fill_manual(name = lgttl, values = cg("white","#08306B",bns), drop = F)
+      }
+      
+      # If bottom-left plot
+      if (og == length(rgns) & dn == 1) {
+        # Include provincia names on both axes
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank())
+      } else if (og < length(rgns) & dn == 1) { # If left-hand plot
+        # Include provincia names on y-axis
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank(),
+                      axis.text.x  = element_blank())
+      } else if (og == length(rgns) & dn > 1) { # If bottom plot
+        # Include provincia names on x-axis
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank(),
+                      axis.text.y  = element_blank())
+      } else { # If plot not on left of bottom edges of multiplot
+        # Remove provincia names
+        p = p + theme(axis.title.x = element_blank(),
+                      axis.title.y = element_blank(),
+                      axis.text.x  = element_blank(),
+                      axis.text.y  = element_blank())
+      }
+      
+      # Add ggplot to plot list
+      pl[[i]] = p
+      
+    }
+    
+  }
+  
+  # Return list of plots
+  return(pl)
+}
+```
+```{r}
 hhm = function(df,ylower,yupper,xlower,xupper,values,rm_diag=F,bins=15,cbrks=NULL) {
   
   # Remove unwanted rows and format origin so geographies appear in alphabetical order
