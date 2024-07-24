@@ -1,0 +1,7 @@
+"0",""
+"0","ggplot(tn,aes(yr,nm,col=dt)) +"
+"0","  geom_point() +"
+"0","  geom_line() +"
+"0","  theme_minimal() +"
+"0","  scale_x_continuous(breaks = 2019:2022, labels = paste(2018:2021,2019:2022,sep=""-"")) +"
+"0","  labs(x = NULL, y = ""Normalised Net Migration"")"
