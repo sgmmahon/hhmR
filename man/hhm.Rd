@@ -2,7 +2,7 @@
 % Please edit documentation in R/hhm.R
 \name{hhm}
 \alias{hhm}
-\title{hhm}
+\title{Hierarchical Heatmap}
 \usage{
 hhm(
   df,
@@ -24,13 +24,15 @@ hhm(
 }
 \arguments{
 \item{df}{A data.frame with containing values with which to populate the heatmap.
-The data.frame must include columns specifying the lower categories (ylower,
-xlower) and upper groups (yupper, xupper) that each value corresponds to. These
-categories and groups will be used to arrange and label the rows and columns of
-the heatmap. Note that the groups will by default be arranged alphabetically
-(top to bottom / left to right). The ordering of the groups can be manually
-specified by converting yupper and/or xupper to factors. In this case, the
-groups will be ordered based on the ordering of the factor levels.}
+The data.frame must include columns specifying the lower categories (`ylower`,
+`xlower`) and upper groups (`yupper`, `xupper`) that each value corresponds to.
+These categories and groups will be used to arrange and label the rows and
+columns of the heatmap. It must also contain a `values` variable containing the
+values used to populate the heatmap. Note that the groups will by default be
+arranged alphabetically (top to bottom / left to right). The ordering of the
+groups can be manually specified by converting yupper and/or xupper to factors.
+In this case, the groups will be ordered based on the ordering of the factor
+levels.}
 
 \item{ylower}{A column in `df` containing the categories that will be presented
 as rows along the y-axis of the heatmap.}
@@ -56,7 +58,7 @@ values.}
 
 \item{bins}{Option to break the data into a specified number of groups
 (defaults to `NULL`). The thresholds between these groups will be equally
-spaced between the minimum and maximum values observed in `values`.}
+spaced between zero and the maximum value observed in `values`.}
 
 \item{cbrks}{Vector of custom breaks, if users wish to use a discrete legend
 colour scheme (defaults to `NULL`). For example, a supplied vector of `c(5,10,
@@ -177,7 +179,7 @@ bins_15
 
 # Create breaks to view data using a categoric scale.
 # In this instance, the `hhmR` function `log_seq` has been used to create a
-# vector oflogarithmicly increasing values between 1 and the maximum value
+# vector of logarithmicly increasing values between 1 and the maximum value
 # in the dataset not on the diagonal.
 cbrks = log_seq(example_migration[example_migration[["Origin County"     ]] !=
                                   example_migration[["Destination County"]],] \%>\%
