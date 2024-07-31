@@ -1,0 +1,19 @@
+"0","df %>%
+  arrange(desc(.data$x))
+"
+"1","[1mSource: [22mlocal data table [3 x 1]
+"
+"1","[1mCall:   [22m`_DT1`[order(-x)]
+"
+"1","
+"
+"1","      x
+  [3m[38;5;246m<int>[39m[23m
+[38;5;250m1[39m     3
+[38;5;250m2[39m     2
+[38;5;250m3[39m     1
+"
+"1","
+"
+"1","[90m# Use as.data.table()/as.data.frame()/as_tibble() to access results[39m
+"

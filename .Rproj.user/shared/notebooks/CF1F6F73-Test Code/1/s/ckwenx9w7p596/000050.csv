@@ -1,0 +1,8 @@
+"0","      # To prevent legend showing NA values if rm_diag set to TRUE (in which case, diagonal set to NA), only show legend for plots that are not on the diagonal
+      if (rm_diag && (sdf[[values]] %>% is.na() %>% sum() %>% {.data > 0}) && (ygrp == xgrp) ) {
+        p = p + theme(legend.position = ""none"")
+      }
+"
+"2","Error in if (rm_diag && (sdf[[values]] %>% is.na() %>% sum() %>% { : 
+  missing value where TRUE/FALSE needed
+"
