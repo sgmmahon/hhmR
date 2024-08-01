@@ -30,8 +30,9 @@ contain a `values` variable, containing the values used to populate the heatmap,
 and a `times` variable, containing the time period during which each value was
 observed. Note that the groups in `upper` will by default be arranged
 alphabetically (top to bottom). The ordering of the groups can be manually
-specified by converting yupper and/or xupper to factors. In this case, the groups
-will be ordered based on the ordering of the factor levels.}
+specified by converting `upper` to a factor. In this case, the groups
+will be ordered based on the ordering of the factor levels. The ordering of rows
+within each group can also be specified using the `sort_lower` variable.}
 
 \item{lower}{A column in `df` containing the categories that will be presented
 as rows along the y-axis of the heatmap.}

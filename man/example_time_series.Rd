@@ -24,6 +24,7 @@ with each county existing within a smaller subset of regions.
 }
 \examples{
 library(dplyr)
+library(tidyr)
 
 # Define names of fake counties
 fake_counties = c("Greenridge","Windermoor","Bramblewood","Silverlake",
