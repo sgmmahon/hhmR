@@ -85,7 +85,7 @@ utils::globalVariables(".")
 #'                            xttl_height = 0.4,
 #'                            rm_diag = TRUE)
 #'
-#' # Vuew result
+#' # View result
 #' removed_diag
 #'
 #' # Nomalise the legend
@@ -139,7 +139,7 @@ utils::globalVariables(".")
 #' # View result
 #' bins_15
 #'
-#' # Create breaks to view data using a categoric scale.
+#' # Manually break data into categories using user-specified intervals.
 #' # In this instance, the `hhmR` function `log_seq` has been used to create a
 #' # vector of logarithmicly increasing values between 1 and the maximum value
 #' # in the dataset not on the diagonal.
