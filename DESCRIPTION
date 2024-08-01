@@ -2,9 +2,12 @@ Package: hhmR
 Type: Package
 Title: Hierarchical Heatmaps
 Version: 0.0.1
-Author: person("Michael", "Mahony", email = "michael.mahony@cantab.net", role = c("cre","aut"))
+Authors@R: person(given = c("Michael", "Mahony"),
+                  family = "maintainer",
+                  role = c("cre","aut","cph"),
+                  email = "michael.mahony@cantab.net")
 Maintainer: The package maintainer <michael.mahony@cantab.net>
-Description: This package allows users to create high-quality heatmaps heatmaps from labelled hiearchical data. Specifically, for data with a two-level hierarchical structure, it will produce a heatmap where each row and column represents a category at the lower level. These rows and columns are then grouped by the higher-level group each category belongs to, with the names for each category and groups shown in the margins. While other packages (e.g. `dendextend`) allow heatmap rows and columns to be arranged by groups, I believe this is the only R package which also labels the data at both levels - i.e. both category and group names are shown of the left and bottom margins.
+Description: Allows users to create high-quality heatmaps heatmaps from labelled, hierarchical data. Specifically, for data with a two-level hierarchical structure, it will produce a heatmap where each row and column represents a category at the lower level. These rows and columns are then grouped by the higher-level group each category belongs to, with the names for each category and groups shown in the margins. While other packages (e.g. `dendextend`) allow heatmap rows and columns to be arranged by groups, I believe this is the only R package which also labels the data at both levels - i.e. both category and group names are shown of the left and bottom margins.
 License: MIT + file LICENSE
 Encoding: UTF-8
 URL: https://github.com/sgmmahon/hhmR
