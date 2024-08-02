@@ -3,6 +3,7 @@
 export("%>%")
 export(cg)
 export(decimalplaces)
+export(exp_seq)
 export(hhm)
 export(log_seq)
 export(plt_ttl)

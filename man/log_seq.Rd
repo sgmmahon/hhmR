@@ -18,14 +18,14 @@ and the end of the returned vector (defaults to `FALSE`). Note that this will me
 of the returned vector will be `n` - 2.}
 }
 \value{
-A vector containing of logarithmicly increasing values between 1 and a specified value `n`.
+A vector containing logarithmicly increasing values between 0 and a specified value `n`.
 }
 \description{
 Creates a vector of logarithmicly increasing values between 0 and a specified value `n`.
 If `n` is specified as 1, the vector will be scaled to between 0 and 1.
 }
 \examples{
-# Create sequence of length 20, scaled between 1 and 500
+# Create sequence of length 20, scaled between 0 and 500
 log_seq(500,20)
 
 # Create sequence of length 15, scaled between 0 and 1

@@ -5,16 +5,16 @@ utils::globalVariables(".")
 #' If `n` is specified as 1, the vector will be scaled to between 0 and 1.
 #'
 #' @param n The maximum value that the values in the sequence are scaled to.
-#' @param ln How many colour gradients to use in the legend (defaults to 15).
+#' @param ln How long the vector should be (defaults to 15).
 #' @param round_values Option to round values to whole numbers (defaults to `TRUE`).
 #' @param rmv_extremes Option to remove zero and the maximum value (i.e. `n`) from the beginning
 #' and the end of the returned vector (defaults to `FALSE`). Note that this will mean the length
 #' of the returned vector will be `n` - 2.
 #'
-#' @return A vector containing of logarithmicly increasing values between 1 and a specified value `n`.
+#' @return A vector containing logarithmicly increasing values between 0 and a specified value `n`.
 #'
 #' @examples
-#' # Create sequence of length 20, scaled between 1 and 500
+#' # Create sequence of length 20, scaled between 0 and 500
 #' log_seq(500,20)
 #'
 #' # Create sequence of length 15, scaled between 0 and 1
