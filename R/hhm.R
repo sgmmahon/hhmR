@@ -46,7 +46,7 @@ utils::globalVariables(".")
 #' equal to the values provided to `bins`.
 #' @param norm_lgd Normalised to between 0 and 1 in legend (defaults to `FALSE`).
 #' Allows for consistency when comparing heatmaps across different datasets. At
-#' present, this only works all heatmap values are positive.
+#' present, this only works if all heatmap values are positive.
 #' @param lgdps If using custom breaks, define the number of decimal points to
 #' round the legend scale to (defaults to 0). If `norm_lgd` is `TRUE`, it will
 #' default to 3.

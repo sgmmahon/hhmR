@@ -48,7 +48,7 @@ utils::globalVariables(".")
 #' equal to the values provided to `bins`.
 #' @param norm_lgd Normalised to between 0 and 1 in legend (defaults to `FALSE`).
 #' Allows for consistency when comparing heatmaps across different datasets. At
-#' present, this only works all heatmap values are positive.
+#' present, this only works if all heatmap values are positive.
 #' @param lgdps If using custom breaks, define the number of decimal points to
 #' round the legend scale to (defaults to 0). If `norm_lgd` is `TRUE`, it will
 #' default to 3.
@@ -68,47 +68,38 @@ utils::globalVariables(".")
 #' data(example_time_series)
 #'
 #' # Intial heatmap
-#' time_series_heatmap = tshm(df = example_time_series,
-#'                            lower  = "County",
-#'                            upper  = "Region",
-#'                            times  = "Year",
-#'                            values = "Immigration")
+#' time_series_heatmap = tshhm(df = example_time_series,
+#'                             lower  = "County",
+#'                             upper  = "Region",
+#'                             times  = "Year",
+#'                             values = "Immigration",
+#'                             yttl_width  = 0.25)
 #'
 #' # View result
 #' time_series_heatmap
 #'
 #' # Arrange counties within each region by total number of immigrants
 #' # across all five years (ascending from top to bottom)
-#' sort_ascending      = tshm(df = example_time_series,
-#'                            lower  = "County",
-#'                            upper  = "Region",
-#'                            times  = "Year",
-#'                            values = "Immigration",
-#'                            sort_lower = "sum_ascend")
+#' sort_ascending      = tshhm(df = example_time_series,
+#'                             lower  = "County",
+#'                             upper  = "Region",
+#'                             times  = "Year",
+#'                             values = "Immigration",
+#'                             sort_lower = "sum_ascend",
+#'                             yttl_width  = 0.25)
 #'
 #' # View result
 #' sort_ascending
 #'
-#' # Increase spacing between plots
-#' increase_spaces     = tshm(df = example_time_series,
-#'                            lower  = "County",
-#'                            upper  = "Region",
-#'                            times  = "Year",
-#'                            values = "Immigration",
-#'                            sort_lower = "sum_ascend",
-#'                            plot_spacers = 1)
-#'
-#' # View result
-#' increase_spaces
-#'
 #' # Nomalise the legend
-#' normalised_lgd      = tshm(df = example_time_series,
-#'                            lower  = "County",
-#'                            upper  = "Region",
-#'                            times  = "Year",
-#'                            values = "Immigration",
-#'                            sort_lower = "sum_ascend",
-#'                            norm_lgd = TRUE)
+#' normalised_lgd      = tshhm(df = example_time_series,
+#'                             lower  = "County",
+#'                             upper  = "Region",
+#'                             times  = "Year",
+#'                             values = "Immigration",
+#'                             sort_lower = "sum_ascend",
+#'                             norm_lgd = TRUE,
+#'                             yttl_width  = 0.25)
 #'
 #' # View result
 #' normalised_lgd
@@ -118,41 +109,44 @@ utils::globalVariables(".")
 #'                "#1E9B8AFF","#2BB07FFF","#51C56AFF","#85D54AFF","#C2DF23FF","#FDE725FF")
 #'
 #' # Assign continuous colour scheme
-#' cont_clrs           = tshm(df = example_time_series,
-#'                            lower  = "County",
-#'                            upper  = "Region",
-#'                            times  = "Year",
-#'                            values = "Immigration",
-#'                            sort_lower = "sum_ascend",
-#'                            norm_lgd = TRUE,
-#'                            cclrs = viridis_12)
+#' cont_clrs           = tshhm(df = example_time_series,
+#'                             lower  = "County",
+#'                             upper  = "Region",
+#'                             times  = "Year",
+#'                             values = "Immigration",
+#'                             sort_lower = "sum_ascend",
+#'                             norm_lgd = TRUE,
+#'                             cclrs = viridis_12,
+#'                             yttl_width  = 0.25)
 #'
 #' # View result
 #' cont_clrs
 #'
 #' # Assign colour for NA values
-#' na_clrs             = tshm(df = example_time_series,
-#'                            lower  = "County",
-#'                            upper  = "Region",
-#'                            times  = "Year",
-#'                            values = "Immigration",
-#'                            sort_lower = "sum_ascend",
-#'                            norm_lgd = TRUE,
-#'                            cclrs = viridis_12,
-#'                            na_colour = "grey80")
+#' na_clrs             = tshhm(df = example_time_series,
+#'                             lower  = "County",
+#'                             upper  = "Region",
+#'                             times  = "Year",
+#'                             values = "Immigration",
+#'                             sort_lower = "sum_ascend",
+#'                             norm_lgd = TRUE,
+#'                             cclrs = viridis_12,
+#'                             na_colour = "grey80",
+#'                             yttl_width  = 0.25)
 #'
 #' # View result
 #' na_clrs
 #'
 #' # Break legends into a specified number of bins
 #' # (of equal intervals between 0 and the maximum value in `values`)
-#' bins_15             = tshm(df = example_time_series,
-#'                            lower  = "County",
-#'                            upper  = "Region",
-#'                            times  = "Year",
-#'                            values = "Immigration",
-#'                            sort_lower = "sum_ascend",
-#'                            bins = 15)
+#' bins_15             = tshhm(df = example_time_series,
+#'                             lower  = "County",
+#'                             upper  = "Region",
+#'                             times  = "Year",
+#'                             values = "Immigration",
+#'                             sort_lower = "sum_ascend",
+#'                             bins = 15,
+#'                             yttl_width  = 0.25)
 #'
 #' # View result
 #' bins_15
@@ -165,27 +159,29 @@ utils::globalVariables(".")
 #'                 12, rmv_extremes = TRUE)
 #'
 #' # Manually assign legend categories
-#' legend_cats         = tshm(df = example_time_series,
-#'                            lower  = "County",
-#'                            upper  = "Region",
-#'                            times  = "Year",
-#'                            values = "Immigration",
-#'                            sort_lower = "sum_ascend",
-#'                            cbrks = cbrks)
+#' legend_cats         = tshhm(df = example_time_series,
+#'                             lower  = "County",
+#'                             upper  = "Region",
+#'                             times  = "Year",
+#'                             values = "Immigration",
+#'                             sort_lower = "sum_ascend",
+#'                             cbrks = cbrks,
+#'                             yttl_width  = 0.25)
 #'
 #' # View result
 #' legend_cats
 #'
 #' # Manually assign colours to legend categories
-#' cat_clrs            = tshm(df = example_time_series,
-#'                            lower  = "County",
-#'                            upper  = "Region",
-#'                            times  = "Year",
-#'                            values = "Immigration",
-#'                            sort_lower = "sum_ascend",
-#'                            cbrks = cbrks,
-#'                            cclrs = viridis_12,
-#'                            na_colour = "grey80")
+#' cat_clrs            = tshhm(df = example_time_series,
+#'                             lower  = "County",
+#'                             upper  = "Region",
+#'                             times  = "Year",
+#'                             values = "Immigration",
+#'                             sort_lower = "sum_ascend",
+#'                             cbrks = cbrks,
+#'                             cclrs = viridis_12,
+#'                             na_colour = "grey80",
+#'                             yttl_width  = 0.25)
 #'
 #' # View result
 #' cat_clrs
@@ -201,15 +197,16 @@ utils::globalVariables(".")
 #'                                                     "South East")))
 #'
 #' # Manually define order of x-axis and groups
-#' rearrange_axes      = tshm(df = new_time_series,
-#'                            lower  = "County",
-#'                            upper  = "Region",
-#'                            times  = "Year",
-#'                            values = "Immigration",
-#'                            sort_lower = "sum_ascend",
-#'                            cbrks = cbrks,
-#'                            cclrs = viridis_12,
-#'                            na_colour = "grey80")
+#' rearrange_axes      = tshhm(df = new_time_series,
+#'                             lower  = "County",
+#'                             upper  = "Region",
+#'                             times  = "Year",
+#'                             values = "Immigration",
+#'                             sort_lower = "sum_ascend",
+#'                             cbrks = cbrks,
+#'                             cclrs = viridis_12,
+#'                             na_colour = "grey80",
+#'                             yttl_width  = 0.25)
 #'
 #' # View result
 #' rearrange_axes
@@ -239,7 +236,7 @@ utils::globalVariables(".")
 #' @importFrom rlang sym
 #' @importFrom rlang .data
 #' @importFrom utils globalVariables
-tshm = function(df,lower,upper,times,values,sort_lower="alphabetical",lgttl=NULL,bins=NULL,cbrks=NULL,cclrs=NULL,norm_lgd=F,lgdps=0,na_colour=NULL,xttl_height=0.05,yttl_width=0.15) {
+tshhm = function(df,lower,upper,times,values,sort_lower="alphabetical",lgttl=NULL,bins=NULL,cbrks=NULL,cclrs=NULL,norm_lgd=F,lgdps=0,na_colour=NULL,xttl_height=0.05,yttl_width=0.15) {
 
   # Define max value supplied to `values`
   max_value = max(df[[values]], na.rm = TRUE)

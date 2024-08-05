@@ -36,7 +36,7 @@ plt_ttl = function(ttl,axs="x",rotate_title=TRUE) {
     if (rotate_title) {
       p = p + geom_text(x = 0.495, y = 1.0, angle = 90, label = ttl, size = 4, hjust = 1)
     } else if (rotate_title == FALSE) {
-      p = p + geom_text(x = 0.495, y = 0.9, angle =  0, label = ttl, size = 4, hjust = 1)
+      p = p + geom_text(x = 0.495, y = 0.5, angle =  0, label = ttl, size = 4, hjust = 1)
     } else {
       stop("rotate_title must be TRUE or FALSE.")
     }

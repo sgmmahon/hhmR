@@ -4,13 +4,18 @@
 \alias{plt_ttl}
 \title{plt_ttl}
 \usage{
-plt_ttl(ttl, axs = "x")
+plt_ttl(ttl, axs = "x", rotate_title = TRUE)
 }
 \arguments{
 \item{ttl}{The name of the upper group.}
 
-\item{axs}{The axis on which the name will appear. If `x`, the text will be written at the
-top-centre of the plot. If `y`, the text will be written at the middle-right of the plot.}
+\item{axs}{The axis on which the name will appear (defaults to "x"). If `x`, the text will be
+written at the top-centre of the plot. If `y`, the text will be written at the middle-right of the
+plot.}
+
+\item{rotate_title}{Whether the title should be rotate to be perpendicular to the axis (defaults
+to TRUE). If TRUE, the title text on the x and y axes will be printed horizontally and vertically
+respectively, with the reverse orientation if set to FALSE.}
 }
 \value{
 A ggplot object containing the title of a given upper group, for use in the hhm function.
@@ -20,7 +25,9 @@ Creates plot containing the name of a given upper group. Used in combination wit
 patchwork package to plot the names of the upper groups within the hhm function.
 }
 \examples{
-plt_ttl("Group 1",axs="y")
+plt_ttl("Group 1", axs = "y")
 plt_ttl("Group 2")
+plt_ttl("Group 1", axs = "y",rotate_title = FALSE)
+plt_ttl("Group 2"           ,rotate_title = FALSE)
 
 }

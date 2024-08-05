@@ -9,7 +9,7 @@ log_seq(n, ln = 15, round_values = T, rmv_extremes = F)
 \arguments{
 \item{n}{The maximum value that the values in the sequence are scaled to.}
 
-\item{ln}{How many colour gradients to use in the legend (defaults to 15).}
+\item{ln}{How long the vector should be (defaults to 15).}
 
 \item{round_values}{Option to round values to whole numbers (defaults to `TRUE`).}
 

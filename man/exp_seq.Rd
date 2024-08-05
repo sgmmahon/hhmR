@@ -9,7 +9,7 @@ exp_seq(n, ln = 15, exponent = 2, round_values = TRUE, rmv_extremes = TRUE)
 \arguments{
 \item{n}{The maximum value that the values in the sequence are scaled to.}
 
-\item{ln}{How many colour gradients to use in the legend (defaults to 15).}
+\item{ln}{How long the vector should be (defaults to 15).}
 
 \item{exponent}{The exponential power with which to multiply the sequence by (defaults to 2).}
 
