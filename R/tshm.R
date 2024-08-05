@@ -34,8 +34,6 @@ utils::globalVariables(".")
 #' `mean_ascend`, which order rows in ascending order (top to bottom) based on
 #' the row totals and row means respectively. This order can be reversed with the
 #' options `sum_descend` and `mean_descend`.
-#' @param plot_spacers Option to define the empty spacing between the groups
-#' (defaults to 0.5).
 #' @param lgttl Option to manually define legend title.
 #' @param bins Option to break the data into a specified number of groups
 #' (defaults to `NULL`). The thresholds between these groups will be equally
@@ -56,6 +54,10 @@ utils::globalVariables(".")
 #' default to 3.
 #' @param na_colour Option to define the colour of NA values in the legend (defaults
 #' to `NULL`, meaning NA values will be assigned no colour).
+#' @param xttl_height The space allocated to the title on the x-axis as a
+#' proportion of the heatmap's height (defaults to 0.05).
+#' @param yttl_width The space allocated to the group titles on the y-axis as a
+#' proportion of the heatmap's width (defaults to 0.15).
 #'
 #' @return A ggplot object containing the final heatmap.
 #'
@@ -237,7 +239,7 @@ utils::globalVariables(".")
 #' @importFrom rlang sym
 #' @importFrom rlang .data
 #' @importFrom utils globalVariables
-tshm = function(df,lower,upper,times,values,sort_lower="alphabetical",plot_spacers=0.1,lgttl=NULL,bins=NULL,cbrks=NULL,cclrs=NULL,norm_lgd=F,lgdps=0,na_colour=NULL) {
+tshm = function(df,lower,upper,times,values,sort_lower="alphabetical",lgttl=NULL,bins=NULL,cbrks=NULL,cclrs=NULL,norm_lgd=F,lgdps=0,na_colour=NULL,xttl_height=0.05,yttl_width=0.15) {
 
   # Define max value supplied to `values`
   max_value = max(df[[values]], na.rm = TRUE)
@@ -416,9 +418,10 @@ See `?tshm` for details.")
       geom_tile(aes(fill = .data[[values]]), show.legend = TRUE) +
       theme_minimal() +
       theme(plot.margin = unit(rep(0,4), "cm"),
-            axis.title.y = element_text(angle =  0, hjust = 0.5, vjust = 0.5),
+            axis.title.y = element_text(angle =  0, hjust = 20.0, vjust = 0.5),
             axis.ticks   = element_blank()) +
-      labs(y = ygrps[ygrp])
+      #labs(y = ygrps[ygrp])
+      labs(x = NULL, y = NULL)
 
     # Define colour scale
     if (is.null(na_colour)) {
@@ -469,37 +472,48 @@ See `?tshm` for details.")
 
   }
 
-  # If the space between plots set as something other than zero
-  if (plot_spacers != 0) {
+  # Define plot heights and widths (including group titles)
+  wds = c(yttl_width,1)
+  hts = c(yglns,(sum(yglns)*xttl_height))
 
-    # Define plot spacer
-    ps = plot_spacer()
+  # Define plot spacer
+  ps = plot_spacer()
 
-    # Define new empty list with which to add plot spacers
-    pl2 = list()
+  # Create empty list to be populated with plot titles
+  yttls = list()
 
-    # Define new empty vector with which to add plot spacer heights
-    yglns2 = c()
-
-    # Add plot spacers to list
-    for (row in 1:length(ygrps)) {
-
-      # Add plot spacers to new list
-      pl2[[row*2-1]] = pl[row]
-      pl2[[row*2  ]] = ps
-
-      # Add height of plot spacers to height vector
-      yglns2[row*2-1] = yglns[row]
-      yglns2[row*2  ] = plot_spacers
-    }
-
-    # Assign new plot list and heights as default objects
-    pl    = pl2 %>% list_flatten()
-    yglns = yglns2
+  # Define plot titles
+  for (ygrp in 1:length(ygrps)) {
+    yttls[[ygrp]] = plt_ttl(ygrps[ygrp],axs="y")
   }
 
+  # Create empty list to populate with both plot title and heatmap tiles in the correct order
+  plts = list()
+
+  # Define counters for subsetting plot title and heatmap lists, to ensure they are ordered correctly
+  i = 1
+  j = 1
+
+  # For each group (row), assign each plot title, then the heatmap tiles within that row to plts list
+  for (ygrp in 1:length(yttls)) {
+
+    # Add plot title to list
+    plts[[i]] = yttls[[ygrp]]
+
+    # Add heatmap plots to list
+    plts[i+1] = pl[j]
+
+    # Adjust counters
+    i = i + 2
+    j = j + 1
+  }
+
+  # Add x-axis plots
+  plts[[length(plts)+1]] = ps
+  plts[[length(plts)+1]] = plt_ttl(times, rotate_title = FALSE)
+
   # Define final plot
-  plt = patchwork::wrap_plots(pl, widths = 1, heights = yglns, guides = "collect")
+  plt = patchwork::wrap_plots(plts, widths = wds, heights = hts, guides = "collect")
 
   # Return final plot
   return(plt)
