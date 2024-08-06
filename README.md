@@ -1,7 +1,7 @@
 # hhmR
 ## Hierarchical Heatmaps
 
-Allows users to create high-quality heatmaps heatmaps from labelled hierarchical data. Specifically, for data with a two-level hierarchical structure, it will produce a heatmap where each row and column represents a category at the lower level. These rows and columns are then grouped by the higher-level group each category belongs to, with the names for each category and groups shown in the margins. While other packages (e.g. `dendextend`) allow heatmap rows and columns to be arranged by groups, I believe this is the only R package which also labels the data at both levels - i.e. both category and group names are shown of the left and bottom margins.
+Allows users to create high-quality heatmaps from labelled hierarchical data. Specifically, for data with a two-level hierarchical structure, it will produce a heatmap where each row and column represents a category at the lower level. These rows and columns are then grouped by the higher-level group each category belongs to, with the names for each category and groups shown in the margins. While other packages (e.g. `dendextend`) allow heatmap rows and columns to be arranged by groups, I believe this is the only R package which also labels the data at both levels - i.e. both category and group names are shown of the left and bottom margins.
 
 The package has two main functions: `hhm` and `tshhm`. These are explained in more detail below.
 
