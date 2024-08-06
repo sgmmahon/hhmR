@@ -1,13 +1,13 @@
 # hhmR
 ## Hierarchical Heatmaps
 
-Allows users to create high-quality heatmaps from labelled hierarchical data. Specifically, for data with a two-level hierarchical structure, it will produce a heatmap where each row and column represents a category at the lower level. These rows and columns are then grouped by the higher-level group each category belongs to, with the names for each category and groups shown in the margins. While other packages (e.g. `dendextend`) allow heatmap rows and columns to be arranged by groups, I believe this is the only R package which also labels the data at both levels - i.e. both category and group names are shown of the left and bottom margins.
+Allows users to create high-quality heatmaps from labelled hierarchical data. Specifically, it requires input data in the form of a two-level hierarchical structure. It will produce a heatmap where each row and column represent a *category* at the lower level. Rows and columns are then grouped into a higher-level *groupings*. Names for each higher-level *category* and *groupings* are shown in the margins. While other packages (e.g. `dendextend`) allow heatmap rows and columns to be arranged by groups only, `hhmR` also allows the labelling of the data at both levels categories and groupings.
 
 The package has two main functions: `hhm` and `tshhm`. These are explained in more detail below.
 
 ### `hhm` (Hierarchical Heatmap)
 
-Creates a labelled heatmap from heirarchical data. This function is useful if you wish to create a heatmap where the categories shown on both the x and y axis can be grouped in some way. This heatmap will order the categories by their assigned group and present both the categories and group labels along the axes. An example might be a series of smaller geographies (lower categories) which aggregate into larger geographical regions (upper groups).
+`hhm` creates a labelled heatmap from hierarchical data. This function is useful if you wish to create a heatmap where the categories shown on both the x and y axis can be grouped in some way. This heatmap will order the categories by their assigned group and present both the categories and group labels along the axes. An example might be a series of smaller geographies (lower categories) which aggregate into larger geographical regions (upper groups).
 
 This function requires a data.frame containing columns which specify the lower categories (`ylower`, `xlower`) and upper groups (`yupper`, `xupper`) that each value corresponds to. These categories and groups are used to arrange and label the rows and columns of the heatmap. The data.frame must also contain a `values` variable containing the values used to populate the heatmap. Note that the groups will by default be arranged alphabetically (top to bottom / left to right). The ordering of the groups can be manually specified by converting `yupper` and/or `xupper` to factors. In this case, the groups will be ordered based on the ordering of the factor levels.
 
