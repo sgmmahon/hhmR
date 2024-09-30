@@ -11,10 +11,10 @@ The package has two main functions: `hhm` and `tshhm`. These are explained in mo
 
 This function requires a data.frame containing columns which specify the lower categories (`ylower`, `xlower`) and upper groupings (`yupper`, `xupper`). These categories and groupings are used to arrange and label rows and columns on a heatmap. The data.frame must contain a `values` variable containing values to populate the heatmap. Note that the groupings will, by default, be arranged alphabetically (top to bottom / left to right). The ordering of the groups can be manually specified by converting `yupper` and/or `xupper` to factors. In this case, the groupings will be ordered based on the ordering of the factor levels provided.
 
-Below are some examples of how the `hhm` function can be used.
+Below is an example of the `hhm` function's application. For a more in depth description of it's usage, see [the package vignette](doc/hhmR_overview.html).
 ```
 # Import package
-library(hhm)
+library(hhmR)
 
 # Import toy demonstration dataset (see `?example_migration` for see details)
 data(example_migration)
@@ -31,111 +31,8 @@ hierarchical_heatmap = hhm(df = example_migration,
 
 # View result
 hierarchical_heatmap
-
-# Remove diagonal from heatmap (i.e. hide static populations)
-removed_diag         = hhm(df = example_migration,
-                           ylower = "Origin County",
-                           xlower = "Destination County",
-                           yupper = "Origin Region",
-                           xupper = "Destination Region",
-                           values = "Migration",
-                           yttl_width = 0.22,
-                           xttl_height = 0.4,
-                           rm_diag = TRUE)
-
-# View result
-removed_diag
-
-# Nomalise the legend
-normalised_lgd       = hhm(df = example_migration,
-                           ylower = "Origin County",
-                           xlower = "Destination County",
-                           yupper = "Origin Region",
-                           xupper = "Destination Region",
-                           values = "Migration",
-                           yttl_width = 0.22,
-                           xttl_height = 0.4,
-                           rm_diag = TRUE,
-                           norm_lgd = TRUE)
-
-# View result
-normalised_lgd
-
-# Manually define colour scheme for heatmap (uses viridis colour scheme)
-viridis_12 = c("#440154FF","#482173FF","#433E85FF","#38598CFF","#2D708EFF","#25858EFF",
-               "#1E9B8AFF","#2BB07FFF","#51C56AFF","#85D54AFF","#C2DF23FF","#FDE725FF")
-
-# Assign continuous colour scheme
-cont_clrs            = hhm(df = example_migration,
-                           ylower = "Origin County",
-                           xlower = "Destination County",
-                           yupper = "Origin Region",
-                           xupper = "Destination Region",
-                           values = "Migration",
-                           yttl_width = 0.22,
-                           xttl_height = 0.4,
-                           rm_diag = TRUE,
-                           norm_lgd = TRUE,
-                           cclrs = viridis_12)
-
-# View result
-cont_clrs
-
-# Break legends into a specified number of bins
-# (of equal intervals between 0 and the maximum value in `values`)
-bins_15              = hhm(df = example_migration,
-                           ylower = "Origin County",
-                           xlower = "Destination County",
-                           yupper = "Origin Region",
-                           xupper = "Destination Region",
-                           values = "Migration",
-                           yttl_width = 0.22,
-                           xttl_height = 0.4,
-                           rm_diag = TRUE,
-                           bins = 15)
-
-# View result
-bins_15
-
-# Manually break data into categories using user-specified intervals.
-# In this instance, the `hhmR` function `log_seq` has been used to create a
-# vector of logarithmicly increasing values between 1 and the maximum value
-# in the dataset not on the diagonal.
-cbrks = log_seq(example_migration[example_migration[["Origin County"     ]] !=
-                                  example_migration[["Destination County"]],] %>%
-                .$Migration %>% max(), 12, rmv_extremes = TRUE)
-
-# Manually assign legend categories
-legend_cats          = hhm(df = example_migration,
-                           ylower = "Origin County",
-                           xlower = "Destination County",
-                           yupper = "Origin Region",
-                           xupper = "Destination Region",
-                           values = "Migration",
-                           yttl_width = 0.22,
-                           xttl_height = 0.4,
-                           rm_diag = TRUE,
-                           cbrks = cbrks)
-
-# View result
-legend_cats
-
-# Manually assign colours to legend categories
-cat_clrs             = hhm(df = example_migration,
-                           ylower = "Origin County",
-                           xlower = "Destination County",
-                           yupper = "Origin Region",
-                           xupper = "Destination Region",
-                           values = "Migration",
-                           yttl_width = 0.22,
-                           xttl_height = 0.4,
-                           rm_diag = TRUE,
-                           cbrks = cbrks,
-                           cclrs = viridis_12)
-
-# View result
-cat_clrs
 ```
+![' '](http://url/to/img.png)
 
 ### `tshhm` (Time-Series Hierarchical Heatmap)
 

@@ -1,4 +1,0 @@
-"0","# Import net migration"
-"0","comuna_nm    = read.table(paste0(dp,mtp,""comuna_matrices_long_format_net_migration.csv""                  ), header = T, sep = "","", na = """", quote = ""\"""")"
-"0","provincia_nm = read.table(paste0(dp,mtp,""provincia_matrices_long_format_net_migration.csv""               ), header = T, sep = "","", na = """", quote = ""\"""")"
-"0","region_nm    = read.table(paste0(dp,mtp,""region_matrices_long_format_net_migration.csv""                  ), header = T, sep = "","", na = """", quote = ""\"""")"

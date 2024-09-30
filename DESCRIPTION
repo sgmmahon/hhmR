@@ -32,4 +32,8 @@ Imports:
     utils
 Language: en-UK
 LazyData: true
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

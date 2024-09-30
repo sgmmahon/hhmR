@@ -5,7 +5,7 @@ utils::globalVariables(".")
 #' useful if you wish to create a heatmap where the categories shown on both the x
 #' and y axis can be grouped in some way. This heatmap will order the categories by
 #' their assigned group and present both the categories and group labels along the
-#' axes. An example might be series of smaller geographies (lower categories) which
+#' axes. An example might be a series of smaller geographies (lower categories) which
 #' aggregate into larger geographical regions (upper groups).
 #'
 #' @param df A data.frame with containing values with which to populate the heatmap.

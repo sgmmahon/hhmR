@@ -29,7 +29,7 @@ utils::globalVariables(".")
 #' @param values A column in `df` containing the values used to populate the
 #' heatmap.
 #' @param sort_lower Option to define how rows (lower) within each group (upper)
-#' are ordered. The default options is `alphabetical`, which orders rows in
+#' are ordered. The default option is `alphabetical`, which orders rows in
 #' alphabetical order from top to bottom. Other options include `sum_ascend` and
 #' `mean_ascend`, which order rows in ascending order (top to bottom) based on
 #' the row totals and row means respectively. This order can be reversed with the
