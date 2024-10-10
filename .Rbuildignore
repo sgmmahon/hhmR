@@ -5,3 +5,7 @@
 ^doc$
 ^doc/hhmR_overview.html$
 ^Meta$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
