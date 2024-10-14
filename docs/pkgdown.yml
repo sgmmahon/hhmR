@@ -3,7 +3,7 @@ pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
   hhmR_overview: hhmR_overview.html
-last_built: 2024-10-14T21:14Z
+last_built: 2024-10-14T21:32Z
 urls:
   reference: https://sgmmahon.github.io/hhmR/reference
   article: https://sgmmahon.github.io/hhmR/articles

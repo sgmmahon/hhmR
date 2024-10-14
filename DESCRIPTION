@@ -4,7 +4,7 @@ Title: Hierarchical Heatmaps
 Version: 0.0.1
 Authors@R: c(
   person("Michael", "Mahony",
-         role = ("cre","aut","cph"),
+         role = c("cre","aut","cph"),
          email = "michael.mahony@cantab.net",
          comment = c(ORCID = "0000-0003-2784-2745")),
 	person("Francisco", "Rowe", 
