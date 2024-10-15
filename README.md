@@ -35,7 +35,7 @@ hierarchical_heatmap = hhm(df = example_migration,
 # View result
 hierarchical_heatmap
 ```
-![ ](https://github.com/sgmmahon/hhmR/blob/main/images/hhm_initial_output.png?raw=true)
+![ ](https://github.com/sgmmahon/hhmR/blob/main/docs/images/hhm_initial_output.png?raw=true)
 
 <br>
 
@@ -64,4 +64,4 @@ time_series_heatmap = tshhm(df = example_time_series,
 # View result
 time_series_heatmap
 ```
-![ ](https://github.com/sgmmahon/hhmR/blob/main/images/tshhm_initial_output.png?raw=true)
+![ ](https://github.com/sgmmahon/hhmR/blob/main/docs/images/tshhm_initial_output.png?raw=true)

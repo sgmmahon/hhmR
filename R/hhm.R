@@ -71,7 +71,8 @@ utils::globalVariables(".")
 #'                            yttl_width = 0.22,
 #'                            xttl_height = 0.4)
 #'
-#' # For more details, see the [package vignette](https://sgmmahon.github.io/hhmR/articles/hhmR_overview.html)
+#' # For more details, see the package vignette at
+#' # https://sgmmahon.github.io/hhmR/articles/hhmR_overview.html
 #' @export
 #' @importFrom dplyr group_split
 #' @importFrom purrr map

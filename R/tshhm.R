@@ -78,7 +78,8 @@ utils::globalVariables(".")
 #' # View result
 #' time_series_heatmap
 #'
-#' # For more details, see the [package vignette](https://sgmmahon.github.io/hhmR/articles/hhmR_overview.html)
+#' # For more details, see the package vignette at
+#' # https://sgmmahon.github.io/hhmR/articles/hhmR_overview.html
 #' @export
 #' @importFrom dplyr group_split
 #' @importFrom dplyr filter
