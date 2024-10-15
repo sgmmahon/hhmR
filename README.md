@@ -13,7 +13,7 @@ The package has two main functions: `hhm` and `tshhm`. These are explained in mo
 
 This function requires a data.frame containing columns which specify the lower categories (`ylower`, `xlower`) and upper groupings (`yupper`, `xupper`). These categories and groupings are used to arrange and label rows and columns on a heatmap. The data.frame must contain a `values` variable containing values to populate the heatmap. Note that the groupings will, by default, be arranged alphabetically (top to bottom / left to right). The ordering of the groups can be manually specified by converting `yupper` and/or `xupper` to factors. In this case, the groupings will be ordered based on the ordering of the factor levels provided.
 
-Below is an example of the `hhm` function's application. For a more in depth description of it's usage, see the [package vignette](https://sgmmahon.github.io/hhmR/articles/hhmR_overview.html).
+Below is an example of the `hhm` function's application. For a more in-depth description of it's usage, see the [package vignette](https://sgmmahon.github.io/hhmR/articles/hhmR_overview.html).
 
 ```
 # Import package
@@ -45,7 +45,7 @@ hierarchical_heatmap
 
 This function requires a data.frame containing columns that specify the lower categories (`lower`) and upper groups (`upper`) that each value corresponds to. These categories and groups will be used to arrange and label the rows of the heatmap. The data.frame must also contain a `values` variable, containing the values used to populate the heatmap, and a `times` variable, containing the time period during which each value was observed. Note that the groups in `upper` will by default be arranged alphabetically (top to bottom). The ordering of the groups can be manually specified by converting `upper` to a factor. In this case, the groups will be ordered based on the ordering of the factor levels. The ordering of rows within each group can also be specified using the `sort_lower` variable.
 
-Below is an of how the `tshhm` function can be used. For a more details, see the [package vignette](https://sgmmahon.github.io/hhmR/articles/hhmR_overview.html).
+Below is an of how the `tshhm` function can be used. For more details, see the [package vignette](https://sgmmahon.github.io/hhmR/articles/hhmR_overview.html).
 ```
 # Import packages
 library(dplyr)

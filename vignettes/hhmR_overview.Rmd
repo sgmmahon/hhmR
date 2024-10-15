@@ -14,7 +14,9 @@ knitr::opts_chunk$set(
 )
 ```
 ```{r, include = FALSE, echo = FALSE, warning = FALSE, message = FALSE}
-library(tidyverse)
+library(dyplr)
+library(purrr)
+library(ggplot2)
 library(patchwork)
 
 # Create example_migration
