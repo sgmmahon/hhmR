@@ -14,8 +14,9 @@ knitr::opts_chunk$set(
 )
 ```
 ```{r, include = FALSE, echo = FALSE, warning = FALSE, message = FALSE}
-library(dyplr)
+library(dplyr)
 library(purrr)
+library(tidyr)
 library(ggplot2)
 library(patchwork)
 

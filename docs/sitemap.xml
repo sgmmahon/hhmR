@@ -1,57 +1,21 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/404.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/articles/hhmR_overview.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/authors.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/index.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/news/index.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/reference/cg.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/reference/decimalplaces.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/reference/example_migration.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/reference/example_time_series.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/reference/exp_seq.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/reference/hhm.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/reference/log_seq.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/reference/pipe.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/reference/plt_ttl.html</loc>
-  </url>
-  <url>
-    <loc>https://sgmmahon.github.io/hhmR/reference/tshhm.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>https://sgmmahon.github.io/hhmR/404.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/articles/hhmR_overview.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/articles/index.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/authors.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/index.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/LICENSE-text.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/news/index.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/reference/cg.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/reference/decimalplaces.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/reference/example_migration.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/reference/example_time_series.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/reference/exp_seq.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/reference/hhm.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/reference/index.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/reference/log_seq.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/reference/pipe.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/reference/plt_ttl.html</loc></url>
+<url><loc>https://sgmmahon.github.io/hhmR/reference/tshhm.html</loc></url>
 </urlset>
+

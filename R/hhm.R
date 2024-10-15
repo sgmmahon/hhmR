@@ -90,6 +90,7 @@ utils::globalVariables(".")
 #' @importFrom ggplot2 scale_fill_gradientn
 #' @importFrom ggplot2 coord_cartesian
 #' @importFrom patchwork plot_spacer
+#' @importFrom tidyr pivot_longer
 #' @importFrom rlang sym
 #' @importFrom rlang .data
 #' @importFrom utils globalVariables
