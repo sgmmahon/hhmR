@@ -78,15 +78,15 @@
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Hierarchical Heatmaps (hhmR) Vignette</h1>
-            
-      
+
+
       <small class="dont-index">Source: <a href="https://github.com/sgmmahon/hhmR/blob/HEAD/vignettes/hhmR_overview.Rmd" class="external-link"><code>vignettes/hhmR_overview.Rmd</code></a></small>
       <div class="hidden name"><code>hhmR_overview.Rmd</code></div>
 
     </div>
 
-    
-    
+
+
 <p><br></p>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
@@ -94,13 +94,9 @@
 <p><code>hhmR</code> allows users to create high-quality heatmaps from
 labelled, hierarchical data. Specifically, for data with a two-level
 hierarchical structure, it will produce a heatmap where each row and
-column represents a category at the lower level. These rows and columns
+column represent a category at the lower level. These rows and columns
 are then grouped by the higher-level group each category belongs to,
-with the names for each category and groups shown in the margins. While
-other packages (e.g. <code>dendextend</code>) allow heatmap rows and
-columns to be arranged by groups, I believe this is the only R package
-which also labels the data at both levels - i.e. both category and group
-names are shown along the left and bottom margins.</p>
+with the names for each category and groups shown in the margins. While other packages (e.g. <code>dendextend</code>) allow heatmap rows and columns to be arranged by groups only, <code>hhmR</code> also allows the labelling of the data at both the category and group level.</p>
 <p><br></p>
 </div>
 <div class="section level2">
@@ -113,7 +109,7 @@ will order the categories by their assigned group and present both the
 categories and group labels along the axes. To illustrate how this
 function can be used, we use internal migration data from a fake country
 (<code>example_migration</code>). This country is made up of regions,
-with each region containing multiple counties. This hierachical
+with each region containing multiple counties. This hierarchical
 structure is summarised below:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Import dplyr for data cleaning</span></span>
@@ -227,8 +223,8 @@ different counties, we can remove the diagonal by setting
 <h4 id="normalise-legend">Normalise legend<a class="anchor" aria-label="anchor" href="#normalise-legend"></a>
 </h4>
 <p>Sometimes it can be useful to normalise the values within a heatmap,
-so different datasets can be compared using the same legend. This can be
-easily done by setting <code>norm_lgd</code> to <code>TRUE</code>.</p>
+so different datasets can be compared using the same legend. Normalising with respect to the maximum value in the heatmap can be
+easily done by setting <code>norm_lgd</code> to <code>TRUE</code>. All the normalised values will be between 0 and 1, with 1 corresponding to the maximum observation.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Nomalise the legend</span></span>
 <span><span class="va">normalised_lgd</span>       <span class="op">=</span> <span class="fu"><a href="../reference/hhm.html">hhm</a></span><span class="op">(</span>df <span class="op">=</span> <span class="va">example_migration</span>,</span>
@@ -250,7 +246,7 @@ easily done by setting <code>norm_lgd</code> to <code>TRUE</code>.</p>
 <h4 id="manually-define-continuous-colour-scheme">Manually define continuous colour scheme<a class="anchor" aria-label="anchor" href="#manually-define-continuous-colour-scheme"></a>
 </h4>
 <p>The default colour scheme fades from blue to white. However, the
-legend colour scheme can be define manually by passing a vector of
+legend colour scheme can be defined manually by passing a vector of
 hexcodes to the argument <code>cclrs</code>. In this example, the
 viridis colour scheme has been provided.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -342,7 +338,7 @@ the diagonal).</p>
 </h4>
 <p>It is also possible to manually define the colour of each category by
 passing a vector of hexcodes to <code>cclrs</code>. The length of this
-vector must be two longer then the vector passed to
+vector must be two units longer than the vector passed to
 <code>cbrks</code>.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Manually assign colours to legend categories</span></span>
@@ -368,7 +364,7 @@ vector must be two longer then the vector passed to
 <h2 id="time-series-heatmaps-tshhm">Time-series heatmaps (<code>tshhm</code>)<a class="anchor" aria-label="anchor" href="#time-series-heatmaps-tshhm"></a>
 </h2>
 <p>Another common challenge with hierarchical data is visualising how it
-changes over time. The function <code>tshhm</code> is design to address
+changes over time. The function <code>tshhm</code> is designed to address
 this. This function is useful if you wish to create a time-series
 heatmap where the categories shown on the y axis can be grouped in some
 way. This heatmap will order the categories by their assigned group and
@@ -377,9 +373,9 @@ present both the categories and group labels along the y-axis.</p>
 same fake country as the previous example
 (<code>example_time_series</code>). This country is made up of the same
 regions, with each region containing the same counties as shown. It
-contains four columns: a <code>County</code> (and the
-<code>Region</code> it is within), the <code>Year</code> of observation,
-and the number of immigrants a county recieved in a given year
+contains four columns: the <code>County</code>, the
+<code>Region</code> it is within, the <code>Year</code> of observation,
+and the number of people a county received in a given year
 (<code>Immigration</code>).</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Show data</span></span>
@@ -403,7 +399,7 @@ upper-level groups (<code>upper</code>) with which to order and group
 the heatmap rows. Additionally, <code>Year</code> is provided as the
 time intervals to be shown on along the axis (<code>times</code>), while
 <code>Immigration</code> provides the values with which to populate the
-heatmap (<code>values</code>). Finally, <code>yttl_width</code> and is
+heatmap (<code>values</code>). Finally, <code>yttl_width</code> is
 used to ensure there is enough space for the region names to be shown
 correctly on the y-axis. Note that NA values are displayed as blank.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
@@ -452,8 +448,8 @@ example) is demonstrated at the end of the vignette.</p>
 <h4 id="normalise-legend-1">Normalise legend<a class="anchor" aria-label="anchor" href="#normalise-legend-1"></a>
 </h4>
 <p>Sometimes it can be useful to normalise the values within a heatmap,
-so different datasets can be compared using the same legend. This can be
-easily done by setting <code>norm_lgd</code> to <code>TRUE</code>.</p>
+so different datasets can be compared using the same legend. Normalising with respect to the maximum value in the heatmap can be
+easily done by setting <code>norm_lgd</code> to <code>TRUE</code>. All the normalised values will be between 0 and 1, with 1 corresponding to the maximum observation.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Nomalise the legend</span></span>
 <span><span class="va">normalised_lgd</span>      <span class="op">=</span> <span class="fu"><a href="../reference/tshhm.html">tshhm</a></span><span class="op">(</span>df <span class="op">=</span> <span class="va">example_time_series</span>,</span>
@@ -576,7 +572,7 @@ increasing values between 1 and the maximum value in the dataset.</p>
 </h4>
 <p>It is also possible to manually define the colour of each category by
 passing a vector of hexcodes to <code>cclrs</code>. The length of this
-vector must be two longer then the vector passed to
+vector must be two units longer than the vector passed to
 <code>cbrks</code>.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Manually assign colours to legend categories</span></span>
