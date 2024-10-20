@@ -1,7 +1,7 @@
 # hhmR
 ## Hierarchical Heatmaps
 
-This package allows users to create high-quality heatmaps from labelled hierarchical data. Specifically, it requires input data in the form of a two-level hierarchical structure. It will produce a heatmap where each row and column represent a *category* at the lower level. Rows and columns are then grouped into a higher-level *groupings*. Names for each higher-level *category* and *groupings* are shown in the margins. While other packages (e.g. `dendextend`) allow heatmap rows and columns to be arranged by groups only, `hhmR` also allows the labelling of the data at both levels categories and groupings.
+This package allows users to create high-quality heatmaps from labelled hierarchical data. Specifically, it requires input data in the form of a two-level hierarchical structure. It will produce a heatmap where each row and column represent a *category* at the lower level. Rows and columns are then grouped into a higher-level *groupings*. Names for each higher-level *category* and *groupings* are shown in the margins. While other packages (e.g. `dendextend`) allow heatmap rows and columns to be arranged by groups only, `hhmR` also allows the labelling of the data at both the category and group level.
 
 The package has two main functions: `hhm` and `tshhm`. These are explained in more detail below.
 
