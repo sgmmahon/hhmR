@@ -106,7 +106,7 @@ utils::globalVariables(".")
 #' @importFrom rlang sym
 #' @importFrom rlang .data
 #' @importFrom utils globalVariables
-tshhm = function(df,lower,upper,times,values,sort_lower="alphabetical",lgttl=NULL,bins=NULL,cbrks=NULL,cclrs=NULL,norm_lgd=F,lgdps=0,na_colour=NULL,xttl_height=0.05,yttl_width=0.15) {
+tshhm = function(df,lower,upper,times,values,sort_lower="alphabetical",lgttl=NULL,bins=NULL,cbrks=NULL,cclrs=NULL,norm_lgd=FALSE,lgdps=0,na_colour=NULL,xttl_height=0.05,yttl_width=0.15) {
 
   # Define max value supplied to `values`
   max_value = max(df[[values]], na.rm = TRUE)

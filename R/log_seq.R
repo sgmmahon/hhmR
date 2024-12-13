@@ -22,7 +22,7 @@ utils::globalVariables(".")
 #'
 #' @export
 #' @importFrom utils globalVariables
-log_seq = function(n,ln=15,round_values=T,rmv_extremes=F) {
+log_seq = function(n,ln=15,round_values=TRUE,rmv_extremes=FALSE) {
 
   # Create a sequence from 1 to n.
   # If `n` is specified as 1, the vector will be scaled to between 0 and 1.

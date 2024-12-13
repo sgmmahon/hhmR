@@ -95,7 +95,7 @@ utils::globalVariables(".")
 #' @importFrom rlang sym
 #' @importFrom rlang .data
 #' @importFrom utils globalVariables
-hhm = function(df,ylower,yupper,xlower,xupper,values,rm_diag=F,lgttl=NULL,bins=NULL,cbrks=NULL,cclrs=NULL,norm_lgd=F,lgdps=0,xttl_height=0.15,yttl_width=0.15) {
+hhm = function(df,ylower,yupper,xlower,xupper,values,rm_diag=FALSE,lgttl=NULL,bins=NULL,cbrks=NULL,cclrs=NULL,norm_lgd=FALSE,lgdps=0,xttl_height=0.15,yttl_width=0.15) {
 
   # Define max value supplied to `values`
   if (rm_diag) {

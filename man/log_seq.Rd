@@ -4,7 +4,7 @@
 \alias{log_seq}
 \title{log_seq}
 \usage{
-log_seq(n, ln = 15, round_values = T, rmv_extremes = F)
+log_seq(n, ln = 15, round_values = TRUE, rmv_extremes = FALSE)
 }
 \arguments{
 \item{n}{The maximum value that the values in the sequence are scaled to.}

@@ -17,7 +17,7 @@ Authors@R: c(
          comment = c(ORCID = "0000-0002-2732-6436"))
 	)
 Maintainer: Michael Mahony <michael.mahony@cantab.net>
-Description: Allows users to create high-quality heatmaps from labelled, hierarchical data. Specifically, for data with a two-level hierarchical structure, it will produce a heatmap where each row and column represents a category at the lower level. These rows and columns are then grouped by the higher-level group each category belongs to, with the names for each category and groups shown in the margins. While other packages (e.g. 'dendextend') allow heatmap rows and columns to be arranged by groups only, 'hhmR' also allows the labelling of the data at both the category and group level.
+Description: Allows users to create high-quality heatmaps from labelled, hierarchical data. Specifically, for data with a two-level hierarchical structure, it will produce a heatmap where each row and column represents a category at the lower level. These rows and columns are then grouped by the higher-level group each category belongs to, with the names for each category and groups shown in the margins. While other packages (e.g. dendextend<https://talgalili.github.io/dendextend/articles/dendextend.html>) allow heatmap rows and columns to be arranged by groups only, 'hhmR' also allows the labelling of the data at both the category and group level.
 License: MIT + file LICENSE
 Encoding: UTF-8
 URL: https://github.com/sgmmahon/hhmR, https://sgmmahon.github.io/hhmR/

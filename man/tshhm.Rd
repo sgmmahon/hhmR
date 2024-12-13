@@ -15,7 +15,7 @@ tshhm(
   bins = NULL,
   cbrks = NULL,
   cclrs = NULL,
-  norm_lgd = F,
+  norm_lgd = FALSE,
   lgdps = 0,
   na_colour = NULL,
   xttl_height = 0.05,
